@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getFields, addField, logUserAction } from '../services/dataService';
-import { PlusCircle, Sprout, Map, LayoutDashboard, ChevronRight, Droplets, Sun, X, Layers, Activity, CloudSun, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import { getFields, addField, deleteField, logUserAction } from '../services/dataService';
+import { PlusCircle, Sprout, Map, LayoutDashboard, ChevronRight, Droplets, Sun, X, Layers, Activity, CloudSun, Sparkles, ShieldCheck, Zap, Trash2, Search, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CROP_EMOJIS = {
@@ -27,6 +27,10 @@ export default function FarmerDashboard() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCropFilter, setSelectedCropFilter] = useState('All');
+  const [deletingId, setDeletingId] = useState(null);
+
   const [newField, setNewField] = useState({
     name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative', soil_type: 'Loamy Soil'
   });
@@ -68,6 +72,28 @@ export default function FarmerDashboard() {
     }
   };
 
+  const handleDeleteField = async (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this field plot?")) {
+      setDeletingId(id);
+      try {
+        await deleteField(id);
+        fetchFields();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const filteredFields = fields.filter(field => {
+    const matchesSearch = field.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCrop = selectedCropFilter === 'All' || field.crop_type === selectedCropFilter;
+    return matchesSearch && matchesCrop;
+  });
+
   if (!currentUser) return null;
 
   if (loading) return (
@@ -86,7 +112,7 @@ export default function FarmerDashboard() {
       transition={{ duration: 0.4 }}
       className="max-w-7xl mx-auto space-y-8"
     >
-      {/* Live Farm Ticker Bar */}
+      {/* Live Ticker Bar */}
       <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-emerald-200/80 px-4 py-2.5 flex items-center justify-between text-xs text-slate-700 shadow-sm overflow-x-auto">
         <div className="flex items-center space-x-2 shrink-0">
           <span className="flex h-2 w-2 relative">
@@ -103,7 +129,7 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
-      {/* Hero Banner — Fresh Emerald Farm Vibe */}
+      {/* Hero Banner */}
       <div className="relative rounded-3xl p-8 sm:p-10 overflow-hidden border border-emerald-200/80 shadow-xl bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 text-white">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
         
@@ -122,7 +148,7 @@ export default function FarmerDashboard() {
           </div>
 
           <motion.button 
-            whileHover={{ scale: 1.04, boxShadow: "0 10px 25px rgba(245, 158, 11, 0.3)" }}
+            whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
             onClick={() => setShowAdd(!showAdd)}
             className={`flex items-center px-6 py-4 rounded-2xl font-bold transition-all shadow-lg text-sm ${
@@ -139,14 +165,14 @@ export default function FarmerDashboard() {
       {/* Quick Stats Bar */}
       {fields.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
             <div className="flex items-center text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1">
               <Map className="w-4 h-4 mr-1.5 text-emerald-600" /> Total Farm Plots
             </div>
             <p className="text-3xl font-black text-slate-900">{fields.length}</p>
           </div>
 
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
             <div className="flex items-center text-xs font-extrabold text-amber-800 uppercase tracking-wider mb-1">
               <Layers className="w-4 h-4 mr-1.5 text-amber-600" /> Total Acreage
             </div>
@@ -155,20 +181,53 @@ export default function FarmerDashboard() {
             </p>
           </div>
 
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
             <div className="flex items-center text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1">
               <Sprout className="w-4 h-4 mr-1.5 text-emerald-600" /> Crop Varieties
             </div>
             <p className="text-3xl font-black text-slate-900">{[...new Set(fields.map(f => f.crop_type))].length}</p>
           </div>
 
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
             <div className="flex items-center text-xs font-extrabold text-teal-800 uppercase tracking-wider mb-1">
               <Zap className="w-4 h-4 mr-1.5 text-teal-600" /> Advisory Engine
             </div>
             <p className="text-lg font-extrabold text-emerald-700 mt-1 flex items-center">
               <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping mr-2" /> Active
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Search & Crop Filter Bar */}
+      {fields.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-emerald-100 shadow-sm">
+          <div className="relative w-full sm:w-80">
+            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search field plots..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+            <Filter className="w-4 h-4 text-emerald-700 mr-1" />
+            {['All', 'Rice', 'Maize', 'Chili', 'Wheat'].map(crop => (
+              <button
+                key={crop}
+                onClick={() => setSelectedCropFilter(crop)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
+                  selectedCropFilter === crop
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {crop}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -267,7 +326,7 @@ export default function FarmerDashboard() {
         variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
-        {fields.map(field => {
+        {filteredFields.map(field => {
           const emoji = CROP_EMOJIS[field.crop_type] || '🌱';
           const stageStyle = STAGE_STYLES[field.current_growth_stage] || STAGE_STYLES.Vegetative;
           
@@ -292,9 +351,15 @@ export default function FarmerDashboard() {
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">{field.area_acres} Acres Plot</p>
                       </div>
                     </div>
-                    <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-200/60 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-xs">
-                      <ChevronRight className="w-5 h-5" />
-                    </div>
+
+                    <button 
+                      onClick={(e) => handleDeleteField(field.id, e)}
+                      disabled={deletingId === field.id}
+                      title="Delete Field Plot"
+                      className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                   
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-between relative z-10">
@@ -308,8 +373,8 @@ export default function FarmerDashboard() {
                       </span>
                     </div>
 
-                    <span className="text-xs font-extrabold text-emerald-700 group-hover:underline">
-                      View Profile →
+                    <span className="text-xs font-extrabold text-emerald-700 group-hover:underline flex items-center">
+                      View Profile <ChevronRight className="w-4 h-4 ml-1" />
                     </span>
                   </div>
                 </div>

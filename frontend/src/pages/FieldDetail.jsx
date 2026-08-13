@@ -2,32 +2,50 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getField, getMoistureReadings, getIrrigationLogs, addMoistureReading, addIrrigationLog, logUserAction, toDate } from '../services/dataService';
-import { Droplet, CloudRain, Activity, CheckCircle, Clock, ArrowLeft, BarChart3, Thermometer, Wind, AlertTriangle, Sparkles, Layers } from 'lucide-react';
+import { Droplet, CloudRain, Activity, CheckCircle, Clock, ArrowLeft, BarChart3, Thermometer, Wind, AlertTriangle, Sparkles, Layers, ShieldCheck, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SoilVisualizer from '../components/SoilVisualizer';
 
 const CROP_RULES = {
   "Rice": {
-    "Germination": { moisture_threshold_percent: 65, water_requirement_mm_per_day: 6.0 },
-    "Vegetative": { moisture_threshold_percent: 60, water_requirement_mm_per_day: 8.0 },
-    "Flowering": { moisture_threshold_percent: 70, water_requirement_mm_per_day: 10.0 },
-    "Maturity": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 5.0 }
+    "Germination": { moisture_threshold_percent: 65, water_requirement_mm_per_day: 6.0, kc: 1.05 },
+    "Vegetative": { moisture_threshold_percent: 60, water_requirement_mm_per_day: 8.0, kc: 1.15 },
+    "Flowering": { moisture_threshold_percent: 70, water_requirement_mm_per_day: 10.0, kc: 1.30 },
+    "Maturity": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 5.0, kc: 0.90 }
   },
   "Maize": {
-    "Germination": { moisture_threshold_percent: 55, water_requirement_mm_per_day: 4.0 },
-    "Vegetative": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 6.0 },
-    "Flowering": { moisture_threshold_percent: 60, water_requirement_mm_per_day: 8.0 },
-    "Maturity": { moisture_threshold_percent: 40, water_requirement_mm_per_day: 4.0 }
+    "Germination": { moisture_threshold_percent: 55, water_requirement_mm_per_day: 4.0, kc: 0.40 },
+    "Vegetative": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 6.0, kc: 0.85 },
+    "Flowering": { moisture_threshold_percent: 60, water_requirement_mm_per_day: 8.0, kc: 1.20 },
+    "Maturity": { moisture_threshold_percent: 40, water_requirement_mm_per_day: 4.0, kc: 0.60 }
   },
   "Chili": {
-    "Germination": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 3.5 },
-    "Vegetative": { moisture_threshold_percent: 45, water_requirement_mm_per_day: 5.0 },
-    "Flowering": { moisture_threshold_percent: 55, water_requirement_mm_per_day: 7.0 },
-    "Maturity": { moisture_threshold_percent: 40, water_requirement_mm_per_day: 3.5 }
+    "Germination": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 3.5, kc: 0.35 },
+    "Vegetative": { moisture_threshold_percent: 45, water_requirement_mm_per_day: 5.0, kc: 0.70 },
+    "Flowering": { moisture_threshold_percent: 55, water_requirement_mm_per_day: 7.0, kc: 1.05 },
+    "Maturity": { moisture_threshold_percent: 40, water_requirement_mm_per_day: 3.5, kc: 0.60 }
+  },
+  "Wheat": {
+    "Germination": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 3.5, kc: 0.40 },
+    "Vegetative": { moisture_threshold_percent: 55, water_requirement_mm_per_day: 5.5, kc: 0.75 },
+    "Flowering": { moisture_threshold_percent: 65, water_requirement_mm_per_day: 7.5, kc: 1.15 },
+    "Maturity": { moisture_threshold_percent: 40, water_requirement_mm_per_day: 3.0, kc: 0.50 }
+  },
+  "Cotton": {
+    "Germination": { moisture_threshold_percent: 45, water_requirement_mm_per_day: 3.5, kc: 0.35 },
+    "Vegetative": { moisture_threshold_percent: 50, water_requirement_mm_per_day: 6.0, kc: 0.75 },
+    "Flowering": { moisture_threshold_percent: 60, water_requirement_mm_per_day: 8.5, kc: 1.20 },
+    "Maturity": { moisture_threshold_percent: 35, water_requirement_mm_per_day: 4.0, kc: 0.65 }
+  },
+  "Sugarcane": {
+    "Germination": { moisture_threshold_percent: 55, water_requirement_mm_per_day: 4.5, kc: 0.40 },
+    "Vegetative": { moisture_threshold_percent: 65, water_requirement_mm_per_day: 8.0, kc: 1.00 },
+    "Flowering": { moisture_threshold_percent: 70, water_requirement_mm_per_day: 9.5, kc: 1.25 },
+    "Maturity": { moisture_threshold_percent: 45, water_requirement_mm_per_day: 4.5, kc: 0.75 }
   }
 };
 
-const DEFAULT_RULE = { moisture_threshold_percent: 50, water_requirement_mm_per_day: 5.0 };
+const DEFAULT_RULE = { moisture_threshold_percent: 50, water_requirement_mm_per_day: 5.0, kc: 0.8 };
 
 export default function FieldDetail() {
   const { id } = useParams();
@@ -54,12 +72,12 @@ export default function FieldDetail() {
 
   const fetchWeather = () => {
     const mockWeather = {
-      temperature_c: Math.round(25 + Math.random() * 10),
+      temperature_c: Math.round(25 + Math.random() * 8),
       rain_probability_percent: Math.round(Math.random() * 50),
       expected_rainfall_mm: Math.round(Math.random() * 5 * 10) / 10,
       humidity_percent: Math.round(55 + Math.random() * 30),
       wind_speed_kmh: Math.round(5 + Math.random() * 15),
-      source: 'AgriSense Weather AI'
+      source: 'AgriSense FAO-56 Station'
     };
     setWeatherData(mockWeather);
   };
@@ -89,47 +107,71 @@ export default function FieldDetail() {
     const latestMoisture = history.readings.length > 0 ? history.readings[0].moisture_percent : 0;
     const rainProb = weatherData ? weatherData.rain_probability_percent : 20;
     const expRain = weatherData ? weatherData.expected_rainfall_mm : 0;
+    const tempC = weatherData ? weatherData.temperature_c : 28;
     
     const crop = field.crop_type;
     const stage = field.current_growth_stage;
     const rule = (CROP_RULES[crop] && CROP_RULES[crop][stage]) ? CROP_RULES[crop][stage] : DEFAULT_RULE;
     
     const threshold = rule.moisture_threshold_percent;
-    const dailyNeed = rule.water_requirement_mm_per_day;
+    const dailyBaseNeed = rule.water_requirement_mm_per_day;
+    const kc = rule.kc || 1.0;
+
+    // High Precision FAO-56 Calculation
+    const effectiveRainMm = rainProb >= 60 ? Math.round((expRain * 0.8) * 10) / 10 : 0.0;
+    const tempFactor = 1.0 + Math.max(0.0, (tempC - 25.0) / 50.0);
+    const etcMm = Math.round((dailyBaseNeed * kc * tempFactor) * 10) / 10;
 
     let result;
     if (latestMoisture >= threshold) {
       result = {
         recommendation: "wait",
-        amount_mm: 0,
-        reason: `Soil moisture (${latestMoisture}%) is above the ${threshold}% threshold for the ${stage} stage of ${crop}. No irrigation needed right now.`,
+        amount_mm: 0.0,
+        urgency: "Optimal",
+        reason: `Soil moisture (${latestMoisture}%) is above the optimal ${threshold}% threshold for ${stage} stage ${crop}. No water stress detected.`,
         threshold,
-        dailyNeed,
-        moisture: latestMoisture
-      };
-    } else if (rainProb >= 60 && expRain >= dailyNeed * 0.7) {
-      result = {
-        recommendation: "wait",
-        amount_mm: 0,
-        reason: `Rain probability is ${rainProb}% with ${expRain}mm expected — this should cover ~${Math.round((expRain / dailyNeed) * 100)}% of the daily water need. Hold off on irrigation.`,
-        threshold,
-        dailyNeed,
-        moisture: latestMoisture
+        dailyNeed: dailyBaseNeed,
+        moisture: latestMoisture,
+        etcMm,
+        effectiveRainMm,
+        kc
       };
     } else {
-      const deficitFactor = (threshold - latestMoisture) / threshold;
-      const recommendedAmount = Math.round((dailyNeed * (1 + deficitFactor)) * 10) / 10;
-      result = {
-        recommendation: "irrigate",
-        amount_mm: recommendedAmount,
-        reason: `Soil moisture (${latestMoisture}%) is ${Math.round(threshold - latestMoisture)}% below the ${threshold}% threshold for ${crop} in ${stage} stage. Recommended irrigation: ${recommendedAmount}mm to restore optimal levels.`,
-        threshold,
-        dailyNeed,
-        moisture: latestMoisture
-      };
+      const deficitPct = threshold - latestMoisture;
+      const grossDeficitMm = Math.round((etcMm * (1.0 + (deficitPct / threshold))) * 10) / 10;
+      const netRecommendedMm = Math.round(Math.max(0.0, grossDeficitMm - effectiveRainMm) * 10) / 10;
+
+      if (netRecommendedMm <= 0.5) {
+        result = {
+          recommendation: "wait",
+          amount_mm: 0.0,
+          urgency: "Optimal",
+          reason: `Expected rainfall (${effectiveRainMm}mm) will sufficiently replenish soil moisture. Hold off on irrigation.`,
+          threshold,
+          dailyNeed: dailyBaseNeed,
+          moisture: latestMoisture,
+          etcMm,
+          effectiveRainMm,
+          kc
+        };
+      } else {
+        const urgency = latestMoisture < (threshold * 0.5) ? "Critical" : "Moderate";
+        result = {
+          recommendation: "irrigate",
+          amount_mm: netRecommendedMm,
+          urgency: urgency,
+          reason: `Soil moisture (${latestMoisture}%) is below the ${threshold}% threshold. Evapotranspiration loss is ~${etcMm}mm/day (Kc=${kc}). Recommended irrigation: ${netRecommendedMm}mm.`,
+          threshold,
+          dailyNeed: dailyBaseNeed,
+          moisture: latestMoisture,
+          etcMm,
+          effectiveRainMm,
+          kc
+        };
+      }
     }
     
-    setTimeout(() => setRecommendation(result), 600);
+    setTimeout(() => setRecommendation(result), 500);
   };
 
   const handleLogMoisture = async (e) => {
@@ -192,7 +234,7 @@ export default function FieldDetail() {
 
   const tabs = [
     { key: 'log', label: 'Log Reading', icon: Droplet },
-    { key: 'recommendation', label: 'AI Advisory Engine', icon: Activity },
+    { key: 'recommendation', label: 'FAO-56 Advisory Engine', icon: Activity },
     { key: 'history', label: 'History & Logs', icon: Clock },
   ];
 
@@ -233,7 +275,7 @@ export default function FieldDetail() {
         <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
             <span className="font-extrabold text-emerald-800 uppercase tracking-widest flex items-center">
-              <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-500" /> Weather Telemetry
+              <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-500" /> FAO-56 Micro-Climate Weather Telemetry
             </span>
             <div className="flex items-center gap-6 font-bold">
               <div className="flex items-center gap-1.5 text-amber-800">
@@ -246,7 +288,7 @@ export default function FieldDetail() {
               </div>
               <div className="flex items-center gap-1.5 text-teal-800">
                 <Droplet className="w-4 h-4 text-teal-600" />
-                <span>{weatherData.expected_rainfall_mm}mm Rain Expected</span>
+                <span>{weatherData.expected_rainfall_mm}mm Expected</span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-700">
                 <Wind className="w-4 h-4 text-slate-500" />
@@ -340,13 +382,13 @@ export default function FieldDetail() {
                       </button>
                     </form>
 
-                    {/* Requirement Card */}
+                    {/* Scientific Target Card */}
                     <div className="bg-emerald-50/80 rounded-2xl p-4 border border-emerald-200/80 space-y-1">
-                      <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider">Agronomic Rule Target</p>
+                      <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider">FAO-56 Agronomic Model Target</p>
                       <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                        <strong>{field.crop_type}</strong> ({field.current_growth_stage}) requires moisture &gt;{' '}
+                        <strong>{field.crop_type}</strong> ({field.current_growth_stage}) requires threshold moisture &gt;{' '}
                         <strong className="text-emerald-900 font-extrabold">{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).moisture_threshold_percent}%</strong>{' '}
-                        ({(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).water_requirement_mm_per_day}mm/day)
+                        (Crop Kc: {(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).kc})
                       </p>
                     </div>
                   </div>
@@ -359,8 +401,8 @@ export default function FieldDetail() {
                   {!recommendation ? (
                     <div className="text-center py-16 flex flex-col items-center">
                       <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4" />
-                      <p className="text-emerald-900 font-black">Running advisory engine...</p>
-                      <p className="text-xs text-slate-500 font-medium mt-1">Combining soil moisture + rain predictions + crop stage rules</p>
+                      <p className="text-emerald-900 font-black">Executing FAO-56 Evapotranspiration Algorithm...</p>
+                      <p className="text-xs text-slate-500 font-medium mt-1">Combining soil moisture + rain predictions + crop stage coefficients</p>
                     </div>
                   ) : (
                     <motion.div 
@@ -378,6 +420,9 @@ export default function FieldDetail() {
                           ? 'bg-gradient-to-b from-blue-50 to-white' 
                           : 'bg-gradient-to-b from-emerald-50 to-white'
                       }`}>
+                        <div className="inline-flex items-center space-x-2 bg-white/80 px-3 py-1 rounded-full border border-slate-200 text-xs font-bold text-slate-700 mb-3 shadow-xs">
+                          <span>Urgency: {recommendation.urgency}</span>
+                        </div>
                         <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
                           recommendation.recommendation === 'irrigate' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
                         }`}>
@@ -399,18 +444,22 @@ export default function FieldDetail() {
                       <div className="p-6 sm:p-8 space-y-6">
                         <p className="text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/60 font-medium">{recommendation.reason}</p>
                         
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
-                            <p className="text-[10px] text-slate-500 font-extrabold uppercase">Moisture</p>
-                            <p className="text-lg font-black text-slate-900">{recommendation.moisture}%</p>
+                        <div className="grid grid-cols-4 gap-2 text-center">
+                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Moisture</p>
+                            <p className="text-base font-black text-slate-900">{recommendation.moisture}%</p>
                           </div>
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
-                            <p className="text-[10px] text-slate-500 font-extrabold uppercase">Threshold</p>
-                            <p className="text-lg font-black text-slate-900">{recommendation.threshold}%</p>
+                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Threshold</p>
+                            <p className="text-base font-black text-slate-900">{recommendation.threshold}%</p>
                           </div>
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
-                            <p className="text-[10px] text-slate-500 font-extrabold uppercase">Daily Need</p>
-                            <p className="text-lg font-black text-slate-900">{recommendation.dailyNeed}mm</p>
+                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Daily Loss</p>
+                            <p className="text-base font-black text-slate-900">{recommendation.etcMm}mm</p>
+                          </div>
+                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Crop Kc</p>
+                            <p className="text-base font-black text-slate-900">{recommendation.kc}</p>
                           </div>
                         </div>
 

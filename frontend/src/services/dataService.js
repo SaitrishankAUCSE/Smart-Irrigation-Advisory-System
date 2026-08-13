@@ -39,6 +39,19 @@ export async function addField(fieldData) {
   }
 }
 
+export async function deleteField(fieldId) {
+  try {
+    const { deleteDoc } = await import('firebase/firestore');
+    await deleteDoc(doc(db, 'fields', fieldId));
+  } catch (err) {
+    console.warn('Firestore delete unavailable, updating localStorage', err);
+  }
+  const existing = JSON.parse(localStorage.getItem('agrisense_fields') || '[]');
+  const updated = existing.filter(f => f.id !== fieldId);
+  localStorage.setItem('agrisense_fields', JSON.stringify(updated));
+  return true;
+}
+
 export async function getField(fieldId) {
   try {
     const docRef = doc(db, 'fields', fieldId);
