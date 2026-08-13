@@ -27,3 +27,4 @@ firebase-export/
 # OS
 .DS_Store
 Thumbs.db
+.vercel
