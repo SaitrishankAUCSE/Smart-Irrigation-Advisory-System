@@ -37,131 +37,7 @@ def verify_auth(req: https_fn.Request) -> dict:
     decoded = auth.verify_id_token(token)
     return decoded
 
-# Admin Endpoints
-@https_fn.on_request(cors=cors)
-def admin_crop_stage_rules(req: https_fn.Request) -> https_fn.Response:
-    try:
-        user = verify_auth(req)
-        if user.get("role") != "admin":
-            return https_fn.Response("Forbidden: Admins only", status=403)
-        
-        if req.method == "GET":
-            docs = db.collection("crop_stage_rules").stream()
-            rules = [{**doc.to_dict(), "id": doc.id} for doc in docs]
-            return https_fn.Response(json=rules)
-        
-        elif req.method == "POST":
-            data = req.get_json()
-            required = ["crop_type", "growth_stage", "water_requirement_mm_per_day", "moisture_threshold_percent"]
-            if not all(k in data for k in required):
-                return https_fn.Response("Missing fields", status=400)
-            
-            data["updated_by_admin_id"] = user["uid"]
-            data["updated_at"] = firestore.SERVER_TIMESTAMP
-            
-            _, ref = db.collection("crop_stage_rules").add(data)
-            return https_fn.Response(json={"id": ref.id, **data})
-            
-    except ValueError:
-        return https_fn.Response("Unauthorized", status=401)
-    except Exception as e:
-        return https_fn.Response(str(e), status=500)
-
-# Field Endpoints
-@https_fn.on_request(cors=cors)
-def fields(req: https_fn.Request) -> https_fn.Response:
-    try:
-        user = verify_auth(req)
-        uid = user["uid"]
-        
-        if req.method == "GET":
-            docs = db.collection("fields").where("user_id", "==", uid).stream()
-            result = [{**doc.to_dict(), "id": doc.id} for doc in docs]
-            return https_fn.Response(json=result)
-        
-        elif req.method == "POST":
-            data = req.get_json()
-            required = ["name", "crop_type", "area_acres", "current_growth_stage"]
-            if not all(k in data for k in required):
-                return https_fn.Response("Missing required fields", status=400)
-            
-            data["user_id"] = uid
-            data["created_at"] = firestore.SERVER_TIMESTAMP
-            _, ref = db.collection("fields").add(data)
-            return https_fn.Response(json={"id": ref.id, **data})
-            
-    except ValueError:
-        return https_fn.Response("Unauthorized", status=401)
-    except Exception as e:
-        return https_fn.Response(str(e), status=500)
-
-@https_fn.on_request(cors=cors)
-def field_detail(req: https_fn.Request) -> https_fn.Response:
-    try:
-        user = verify_auth(req)
-        uid = user["uid"]
-        # the path would be /field_detail?id=XXX
-        field_id = req.args.get("id")
-        if not field_id:
-            return https_fn.Response("Missing field id", status=400)
-            
-        doc_ref = db.collection("fields").document(field_id)
-        doc = doc_ref.get()
-        if not doc.exists or doc.to_dict().get("user_id") != uid:
-            return https_fn.Response("Not found", status=404)
-            
-        if req.method == "GET":
-            return https_fn.Response(json={**doc.to_dict(), "id": doc.id})
-            
-        elif req.method == "PUT":
-            data = req.get_json()
-            update_data = {}
-            if "current_growth_stage" in data:
-                update_data["current_growth_stage"] = data["current_growth_stage"]
-            doc_ref.update(update_data)
-            return https_fn.Response(json={"id": doc.id, "status": "updated"})
-            
-    except ValueError:
-        return https_fn.Response("Unauthorized", status=401)
-    except Exception as e:
-        return https_fn.Response(str(e), status=500)
-
-@https_fn.on_request(cors=cors)
-def moisture(req: https_fn.Request) -> https_fn.Response:
-    try:
-        user = verify_auth(req)
-        uid = user["uid"]
-        field_id = req.args.get("id")
-        if not field_id:
-            return https_fn.Response("Missing field id", status=400)
-            
-        field_ref = db.collection("fields").document(field_id)
-        field_doc = field_ref.get()
-        if not field_doc.exists or field_doc.to_dict().get("user_id") != uid:
-            return https_fn.Response("Not found", status=404)
-
-        if req.method == "GET":
-            docs = db.collection("moisture_readings").where("field_id", "==", field_id).order_by("created_at", direction=firestore.Query.DESCENDING).stream()
-            result = [{**doc.to_dict(), "id": doc.id} for doc in docs]
-            return https_fn.Response(json=result)
-            
-        elif req.method == "POST":
-            data = req.get_json()
-            if "moisture_percent" not in data:
-                return https_fn.Response("Missing moisture_percent", status=400)
-            val = data["moisture_percent"]
-            if not (0 <= val <= 100):
-                return https_fn.Response("Moisture percent must be 0-100", status=400)
-                
-            data["field_id"] = field_id
-            data["created_at"] = firestore.SERVER_TIMESTAMP
-            _, ref = db.collection("moisture_readings").add(data)
-            return https_fn.Response(json={"id": ref.id, **data})
-            
-    except ValueError:
-        return https_fn.Response("Unauthorized", status=401)
-    except Exception as e:
-        return https_fn.Response(str(e), status=500)
+# Removed admin_crop_stage_rules, fields, field_detail, moisture endpoints (now handled directly via Firestore SDK)
 
 @https_fn.on_request(cors=cors)
 def weather(req: https_fn.Request) -> https_fn.Response:
@@ -206,7 +82,7 @@ def recommendation(req: https_fn.Request) -> https_fn.Response:
         field_data = field_doc.to_dict()
         
         # Get latest moisture
-        moisture_docs = list(db.collection("moisture_readings").where("field_id", "==", field_id).order_by("created_at", direction=firestore.Query.DESCENDING).limit(1).stream())
+        moisture_docs = list(db.collection("fields").document(field_id).collection("moistureReadings").order_by("created_at", direction=firestore.Query.DESCENDING).limit(1).stream())
         if not moisture_docs:
             return https_fn.Response("No moisture readings found", status=400)
         moisture_percent = moisture_docs[0].to_dict().get("moisture_percent", 0.0)
@@ -237,30 +113,7 @@ def recommendation(req: https_fn.Request) -> https_fn.Response:
     except Exception as e:
         return https_fn.Response(str(e), status=500)
 
-@https_fn.on_request(cors=cors)
-def irrigation_log(req: https_fn.Request) -> https_fn.Response:
-    try:
-        user = verify_auth(req)
-        field_id = req.args.get("id")
-        if not field_id:
-            return https_fn.Response("Missing field id", status=400)
-
-        if req.method == "GET":
-            docs = db.collection("irrigation_logs").where("field_id", "==", field_id).order_by("logged_at", direction=firestore.Query.DESCENDING).stream()
-            result = [{**doc.to_dict(), "id": doc.id} for doc in docs]
-            return https_fn.Response(json=result)
-            
-        elif req.method == "POST":
-            data = req.get_json()
-            data["field_id"] = field_id
-            data["logged_at"] = firestore.SERVER_TIMESTAMP
-            _, ref = db.collection("irrigation_logs").add(data)
-            return https_fn.Response(json={"id": ref.id, **data})
-            
-    except ValueError:
-        return https_fn.Response("Unauthorized", status=401)
-    except Exception as e:
-        return https_fn.Response(str(e), status=500)
+# Removed irrigation_log endpoint (now handled directly via Firestore SDK)
 
 import pandas as pd
 
@@ -274,7 +127,7 @@ def analytics(req: https_fn.Request) -> https_fn.Response:
             
         path = req.path
         
-        docs = list(db.collection("irrigation_logs").where("field_id", "==", field_id).stream())
+        docs = list(db.collection("fields").document(field_id).collection("irrigationLogs").stream())
         if not docs:
             return https_fn.Response(json={"data": []})
             

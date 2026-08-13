@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useAuth } from '../AuthContext';
-import { auth } from '../firebase';
+import { db } from '../firebase';
+import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ShieldCheck, Plus } from 'lucide-react';
-
-const API_BASE = "http://localhost:5001/demo-project/us-central1";
 
 export default function AdminPanel() {
   const [rules, setRules] = useState([]);
@@ -17,11 +15,9 @@ export default function AdminPanel() {
 
   const fetchRules = async () => {
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await axios.get(`${API_BASE}/admin_crop_stage_rules`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRules(res.data);
+      const querySnapshot = await getDocs(collection(db, 'crop_stage_rules'));
+      const rulesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setRules(rulesData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -36,9 +32,10 @@ export default function AdminPanel() {
   const handleAddRule = async (e) => {
     e.preventDefault();
     try {
-      const token = await auth.currentUser.getIdToken();
-      await axios.post(`${API_BASE}/admin_crop_stage_rules`, newRule, {
-        headers: { Authorization: `Bearer ${token}` }
+      await addDoc(collection(db, 'crop_stage_rules'), {
+        ...newRule,
+        updated_by_admin_id: currentUser.uid,
+        updated_at: serverTimestamp()
       });
       setNewRule({ crop_type: 'Wheat', growth_stage: 'Vegetative', water_requirement_mm_per_day: 5.0, moisture_threshold_percent: 40.0 });
       fetchRules();

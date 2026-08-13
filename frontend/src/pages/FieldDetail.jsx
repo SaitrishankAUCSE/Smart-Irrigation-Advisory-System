@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../AuthContext';
-import { auth } from '../firebase';
+import { db } from '../firebase';
+import { doc, getDoc, collection, getDocs, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Droplet, CloudRain, Activity, CheckCircle, Clock } from 'lucide-react';
 
 const API_BASE = "http://localhost:5001/demo-project/us-central1";
@@ -22,11 +23,13 @@ export default function FieldDetail() {
 
   const fetchField = async () => {
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await axios.get(`${API_BASE}/field_detail?id=${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setField(res.data);
+      const docRef = doc(db, 'fields', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setField({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        setField(null);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -61,10 +64,15 @@ export default function FieldDetail() {
 
   const fetchHistory = async () => {
     try {
-      const token = await auth.currentUser.getIdToken();
-      const mRes = await axios.get(`${API_BASE}/moisture?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      const iRes = await axios.get(`${API_BASE}/irrigation_log?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setHistory({ readings: mRes.data, logs: iRes.data });
+      const mQ = query(collection(db, 'fields', id, 'moistureReadings'), orderBy('created_at', 'desc'));
+      const mSnap = await getDocs(mQ);
+      const mData = mSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const iQ = query(collection(db, 'fields', id, 'irrigationLogs'), orderBy('logged_at', 'desc'));
+      const iSnap = await getDocs(iQ);
+      const iData = iSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      setHistory({ readings: mData, logs: iData });
     } catch (err) {
       console.error(err);
     }
@@ -80,9 +88,10 @@ export default function FieldDetail() {
   const handleLogMoisture = async (e) => {
     e.preventDefault();
     try {
-      const token = await auth.currentUser.getIdToken();
-      await axios.post(`${API_BASE}/moisture?id=${id}`, { moisture_percent: parseFloat(moisture) }, {
-        headers: { Authorization: `Bearer ${token}` }
+      await addDoc(collection(db, 'fields', id, 'moistureReadings'), {
+        moisture_percent: parseFloat(moisture),
+        created_at: serverTimestamp(),
+        source: 'manual'
       });
       alert("Reading logged successfully!");
       setMoisture('');
@@ -96,15 +105,12 @@ export default function FieldDetail() {
 
   const handleLogIrrigation = async (actionTaken) => {
     try {
-      const token = await auth.currentUser.getIdToken();
-      const payload = {
+      await addDoc(collection(db, 'fields', id, 'irrigationLogs'), {
         recommendation: recommendation.recommendation,
         recommended_amount_mm: recommendation.amount_mm,
         action_taken: actionTaken,
-        actual_amount_mm: actionTaken === 'irrigated' ? recommendation.amount_mm : 0
-      };
-      await axios.post(`${API_BASE}/irrigation_log?id=${id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
+        actual_amount_mm: actionTaken === 'irrigated' ? recommendation.amount_mm : 0,
+        logged_at: serverTimestamp()
       });
       alert("Action logged successfully!");
       setRecommendation(null);
@@ -221,7 +227,7 @@ export default function FieldDetail() {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {history.readings.map(r => (
                       <tr key={r.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900">{new Date(r._seconds ? r._seconds * 1000 : Date.now()).toLocaleString()}</td>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900">{r.created_at ? new Date(r.created_at.toDate ? r.created_at.toDate() : Date.now()).toLocaleString() : 'Just now'}</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{r.moisture_percent}%</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{r.source || 'manual'}</td>
                       </tr>
@@ -243,7 +249,7 @@ export default function FieldDetail() {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {history.logs.map(r => (
                       <tr key={r.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900">{new Date(r._seconds ? r._seconds * 1000 : Date.now()).toLocaleString()}</td>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900">{r.logged_at ? new Date(r.logged_at.toDate ? r.logged_at.toDate() : Date.now()).toLocaleString() : 'Just now'}</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{r.recommendation} ({r.recommended_amount_mm}mm)</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm font-medium">
                           <span className={r.action_taken === 'irrigated' ? 'text-blue-600' : 'text-gray-500'}>{r.action_taken}</span>

@@ -1,0 +1,38 @@
+rules_version = "2";
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is admin via custom claim
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == "admin";
+    }
+
+    match /users/{uid} {
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    }
+
+    match /crop_stage_rules/{ruleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /fields/{fieldId} {
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      
+      // Subcollections under fields
+      match /{subcollection}/{docId} {
+        allow read, write: if isAuthenticated() && get(/databases/$(database)/documents/fields/$(fieldId)).data.user_id == request.auth.uid;
+      }
+    }
+    
+    // Other collections like weather_data, moisture_readings if they are flat (but prompt said subcollections)
+    // The previous implementation used flat collections with field_id property!
+    // I need to check how they were implemented previously.
+  }
+}

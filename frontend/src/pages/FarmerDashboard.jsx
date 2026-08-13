@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../AuthContext';
-import { auth } from '../firebase';
+import { db } from '../firebase';
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { PlusCircle, Sprout, Map } from 'lucide-react';
-
-const API_BASE = "http://localhost:5001/demo-project/us-central1";
 
 export default function FarmerDashboard() {
   const [fields, setFields] = useState([]);
@@ -19,11 +17,10 @@ export default function FarmerDashboard() {
 
   const fetchFields = async () => {
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await axios.get(`${API_BASE}/fields`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setFields(res.data);
+      const q = query(collection(db, 'fields'), where('user_id', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+      const fieldsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFields(fieldsData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -38,9 +35,10 @@ export default function FarmerDashboard() {
   const handleAddField = async (e) => {
     e.preventDefault();
     try {
-      const token = await auth.currentUser.getIdToken();
-      await axios.post(`${API_BASE}/fields`, newField, {
-        headers: { Authorization: `Bearer ${token}` }
+      await addDoc(collection(db, 'fields'), {
+        ...newField,
+        user_id: currentUser.uid,
+        created_at: serverTimestamp()
       });
       setShowAdd(false);
       setNewField({ name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative' });
