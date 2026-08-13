@@ -48,24 +48,54 @@ export default function FieldDetail() {
     }
   };
 
-  const loadRecommendation = async () => {
+  const loadRecommendation = () => {
     if (!field) return;
     try {
-      // For demo, we just pass the latest moisture to the backend stateless engine
+      // Local fallback rules for instant demo performance
+      const CROP_RULES = {
+        "Rice": {
+            "Vegetative": {"moisture_threshold_percent": 60, "water_requirement_mm_per_day": 8.0},
+            "Flowering": {"moisture_threshold_percent": 70, "water_requirement_mm_per_day": 10.0},
+            "Maturity": {"moisture_threshold_percent": 50, "water_requirement_mm_per_day": 5.0}
+        },
+        "Maize": {
+            "Vegetative": {"moisture_threshold_percent": 50, "water_requirement_mm_per_day": 6.0},
+            "Flowering": {"moisture_threshold_percent": 60, "water_requirement_mm_per_day": 8.0},
+            "Maturity": {"moisture_threshold_percent": 40, "water_requirement_mm_per_day": 4.0}
+        },
+        "Chili": {
+            "Vegetative": {"moisture_threshold_percent": 45, "water_requirement_mm_per_day": 5.0},
+            "Flowering": {"moisture_threshold_percent": 55, "water_requirement_mm_per_day": 7.0},
+            "Maturity": {"moisture_threshold_percent": 40, "water_requirement_mm_per_day": 3.5}
+        }
+      };
+
       const latestMoisture = history.readings.length > 0 ? history.readings[0].moisture_percent : 0;
       const rainProb = weatherData ? weatherData.rain_probability_percent : 20;
       const expRain = weatherData ? weatherData.expected_rainfall_mm : 0;
       
-      const payload = {
-        moisture_percent: latestMoisture,
-        crop_type: field.crop_type,
-        stage: field.current_growth_stage,
-        rain_probability_percent: rainProb,
-        expected_rainfall_mm: expRain
-      };
+      const crop = field.crop_type;
+      const stage = field.current_growth_stage;
       
-      const res = await axios.post(`${API_BASE}/recommendation`, payload);
-      setRecommendation(res.data);
+      const rule = (CROP_RULES[crop] && CROP_RULES[crop][stage]) ? CROP_RULES[crop][stage] : {"moisture_threshold_percent": 50, "water_requirement_mm_per_day": 5.0};
+      
+      const threshold = rule.moisture_threshold_percent;
+      const dailyNeed = rule.water_requirement_mm_per_day;
+
+      let result = null;
+      if (latestMoisture >= threshold) {
+        result = { recommendation: "wait", amount_mm: 0, reason: "Soil moisture is above threshold for this growth stage." };
+      } else if (rainProb >= 60 && expRain >= dailyNeed * 0.7) {
+        result = { recommendation: "wait", amount_mm: 0, reason: "High rain probability expected to cover most of the water need." };
+      } else {
+        const deficitFactor = (threshold - latestMoisture) / threshold;
+        const recommendedAmount = Math.round((dailyNeed * (1 + deficitFactor)) * 10) / 10;
+        result = { recommendation: "irrigate", amount_mm: recommendedAmount, reason: `Soil moisture ${latestMoisture}% is below the ${threshold}% threshold for this stage.` };
+      }
+      
+      setTimeout(() => {
+        setRecommendation(result);
+      }, 800); // add a slight delay so they can see the 'loading' animation for the demo effect
     } catch (err) {
       console.error(err);
       setRecommendation(null);
