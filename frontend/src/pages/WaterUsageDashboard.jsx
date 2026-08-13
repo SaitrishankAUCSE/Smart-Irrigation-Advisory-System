@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getIrrigationLogs, toDate } from '../services/dataService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ArrowLeft, Target, TrendingUp, Droplet } from 'lucide-react';
+import { ArrowLeft, Target, TrendingUp, Droplet, Printer } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function WaterUsageDashboard() {
@@ -62,14 +62,23 @@ export default function WaterUsageDashboard() {
       transition={{ duration: 0.3 }}
       className="max-w-6xl mx-auto"
     >
-      <div className="mb-6 flex items-center gap-3">
-        <Link to={`/field/${id}`} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Water Analytics</h1>
-          <p className="text-sm text-gray-500">Usage trends and recommendation adherence</p>
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Link to={`/field/${id}`} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm">
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Water Analytics</h1>
+            <p className="text-sm text-gray-500">Usage trends and recommendation adherence</p>
+          </div>
         </div>
+        <button 
+          onClick={() => window.print()}
+          className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 flex items-center shadow-sm transition-all font-medium text-sm"
+        >
+          <Printer className="w-4 h-4 mr-2 text-gray-500" />
+          Export Report
+        </button>
       </div>
 
       {/* Summary Stats */}

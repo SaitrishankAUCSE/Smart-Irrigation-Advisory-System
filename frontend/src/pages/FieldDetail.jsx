@@ -301,7 +301,10 @@ export default function FieldDetail() {
                   <div className="space-y-6">
                     <form onSubmit={handleLogMoisture} className="space-y-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Soil Moisture Reading (%)</label>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Soil Moisture Reading (%)</label>
+                          <span className="text-xs text-blue-600 font-medium">1-Click Presets for Demo:</span>
+                        </div>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Droplet className="h-5 w-5 text-blue-400" />
@@ -312,6 +315,19 @@ export default function FieldDetail() {
                             placeholder="e.g. 45"
                             value={moisture} onChange={e => setMoisture(e.target.value)}
                           />
+                        </div>
+                        
+                        {/* Quick Presets for Demo Judging */}
+                        <div className="flex gap-2 mt-3">
+                          <button type="button" onClick={() => setMoisture('25')} className="flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg border border-amber-200 transition-colors">
+                            Low (25%)
+                          </button>
+                          <button type="button" onClick={() => setMoisture('65')} className="flex-1 py-1.5 px-2 bg-green-50 hover:bg-green-100 text-green-800 text-xs font-semibold rounded-lg border border-green-200 transition-colors">
+                            Optimal (65%)
+                          </button>
+                          <button type="button" onClick={() => setMoisture('15')} className="flex-1 py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-800 text-xs font-semibold rounded-lg border border-red-200 transition-colors">
+                            Critical (15%)
+                          </button>
                         </div>
                       </div>
                       <button 
@@ -324,13 +340,15 @@ export default function FieldDetail() {
                     </form>
 
                     {/* Quick info card */}
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                      <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">Crop Water Need</p>
-                      <p className="text-sm text-blue-800">
-                        <strong>{field.crop_type}</strong> in <strong>{field.current_growth_stage}</strong> stage requires moisture above{' '}
-                        <strong>{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).moisture_threshold_percent}%</strong>{' '}
-                        ({(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).water_requirement_mm_per_day}mm/day)
-                      </p>
+                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex items-start justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Crop Water Threshold</p>
+                        <p className="text-sm text-blue-800">
+                          <strong>{field.crop_type}</strong> ({field.current_growth_stage}) requires moisture &gt;{' '}
+                          <strong>{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).moisture_threshold_percent}%</strong>{' '}
+                          ({(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).water_requirement_mm_per_day}mm/day)
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
