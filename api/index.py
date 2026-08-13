@@ -1,16 +1,16 @@
 import os
 import json
 import base64
+from collections import defaultdict
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
-import pandas as pd
 
 # Initialize Firebase Admin
 try:
     if os.environ.get("FIREBASE_SERVICE_ACCOUNT_BASE64"):
-        # For Render deployment: base64 encoded service account JSON
+        # For Vercel deployment: base64 encoded service account JSON
         creds_json = base64.b64decode(os.environ.get("FIREBASE_SERVICE_ACCOUNT_BASE64")).decode('utf-8')
         cred_dict = json.loads(creds_json)
         cred = credentials.Certificate(cred_dict)
@@ -61,7 +61,7 @@ def get_recommendation(moisture_percent: float, crop_stage_rule: dict, rain_prob
 
     return { "recommendation": "irrigate", "amount_mm": recommended_amount, "reason": f"Soil moisture {moisture_percent}% is below the {threshold}% threshold for this stage." }
 
-@app.get("/weather")
+@app.get("/api/weather")
 def get_weather(id: str, request: Request):
     user = verify_auth(request)
     docs = db.collection("weather_data").where("field_id", "==", id).order_by("fetched_at", direction=firestore.Query.DESCENDING).limit(1).stream()
@@ -71,7 +71,7 @@ def get_weather(id: str, request: Request):
     else:
         return {"rain_probability_percent": 20, "expected_rainfall_mm": 0, "temperature_c": 30, "source": "mock"}
 
-@app.post("/weather")
+@app.post("/api/weather")
 async def post_weather(id: str, request: Request):
     user = verify_auth(request)
     data = await request.json()
@@ -80,7 +80,7 @@ async def post_weather(id: str, request: Request):
     _, ref = db.collection("weather_data").add(data)
     return {"id": ref.id, **data}
 
-@app.get("/recommendation")
+@app.get("/api/recommendation")
 def recommendation(id: str, request: Request):
     user = verify_auth(request)
     
@@ -116,46 +116,48 @@ def recommendation(id: str, request: Request):
     
     return get_recommendation(moisture_percent, rule_data, rain_prob, exp_rain)
 
-@app.get("/analytics/water-usage")
+@app.get("/api/analytics/water-usage")
 def analytics_water_usage(id: str, request: Request):
     user = verify_auth(request)
-    
     docs = list(db.collection("fields").document(id).collection("irrigationLogs").stream())
+    
     if not docs:
         return []
         
     records = [{**d.to_dict()} for d in docs]
-    df = pd.DataFrame(records)
-    df['logged_at'] = pd.to_datetime(df['logged_at'])
-    df = df.sort_values('logged_at')
     
-    df['date'] = df['logged_at'].dt.date
-    usage = df.groupby('date')['actual_amount_mm'].sum().reset_index()
-    usage['date'] = usage['date'].astype(str)
-    return usage.to_dict('records')
+    usage_dict = defaultdict(float)
+    for rec in records:
+        if "logged_at" in rec and rec["logged_at"]:
+            try:
+                date_str = rec["logged_at"].split("T")[0]
+                usage_dict[date_str] += rec.get("actual_amount_mm", 0)
+            except Exception:
+                pass
+                
+    usage_list = [{"date": k, "actual_amount_mm": v} for k, v in sorted(usage_dict.items())]
+    return usage_list
 
-@app.get("/analytics/adherence")
+@app.get("/api/analytics/adherence")
 def analytics_adherence(id: str, request: Request):
     user = verify_auth(request)
-    
     docs = list(db.collection("fields").document(id).collection("irrigationLogs").stream())
+    
     if not docs:
         return {"adherence_percent": 100.0}
         
     records = [{**d.to_dict()} for d in docs]
-    df = pd.DataFrame(records)
+    adhered_count = 0
     
-    def adhered(row):
-        if row['recommendation'] == 'irrigate' and row['action_taken'] == 'irrigated':
-            return True
-        if row['recommendation'] == 'wait' and row['action_taken'] == 'skipped':
-            return True
-        return False
-        
-    df['adhered'] = df.apply(adhered, axis=1)
-    adherence_rate = df['adhered'].mean() * 100
+    for rec in records:
+        r = rec.get('recommendation')
+        a = rec.get('action_taken')
+        if (r == 'irrigate' and a == 'irrigated') or (r == 'wait' and a == 'skipped'):
+            adhered_count += 1
+            
+    adherence_rate = (adhered_count / len(records)) * 100
     return {"adherence_percent": round(adherence_rate, 2)}
 
-@app.get("/")
+@app.get("/api/health")
 def health_check():
-    return {"status": "ok", "service": "agrisense-backend"}
+    return {"status": "ok", "service": "agrisense-vercel-api"}
