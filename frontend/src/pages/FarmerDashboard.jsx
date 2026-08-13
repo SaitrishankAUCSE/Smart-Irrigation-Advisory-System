@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
-import { PlusCircle, Sprout, Map } from 'lucide-react';
+import { PlusCircle, Sprout, Map, LayoutDashboard } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FarmerDashboard() {
   const [fields, setFields] = useState([]);
@@ -49,81 +50,143 @@ export default function FarmerDashboard() {
     }
   };
 
-  if (loading) return <div className="text-center py-12">Loading...</div>;
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
+  if (loading) return <div className="text-center py-12 text-gray-500 animate-pulse">Loading dashboard...</div>;
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Fields</h1>
-        <button 
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="max-w-7xl mx-auto"
+    >
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-black text-gray-900 flex items-center tracking-tight">
+          <LayoutDashboard className="w-8 h-8 mr-3 text-blue-600" />
+          My Fields Dashboard
+        </h1>
+        <motion.button 
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowAdd(!showAdd)}
-          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          className="flex items-center px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-md hover:from-green-600 hover:to-emerald-700 font-semibold transition-all"
         >
           <PlusCircle className="w-5 h-5 mr-2" />
-          Add Field
-        </button>
+          {showAdd ? 'Cancel' : 'Register New Field'}
+        </motion.button>
       </div>
 
-      {showAdd && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-          <h2 className="text-lg font-medium mb-4">Add New Field</h2>
-          <form onSubmit={handleAddField} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <label className="block text-sm font-medium">Field Name</label>
-              <input type="text" required className="mt-1 block w-full border rounded-md p-2" 
-                value={newField.name} onChange={e => setNewField({...newField, name: e.target.value})} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Crop Type</label>
-              <select className="mt-1 block w-full border rounded-md p-2"
-                value={newField.crop_type} onChange={e => setNewField({...newField, crop_type: e.target.value})}>
-                <option>Rice</option>
-                <option>Maize</option>
-                <option>Chili</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Area (Acres)</label>
-              <input type="number" step="0.1" required className="mt-1 block w-full border rounded-md p-2"
-                value={newField.area_acres} onChange={e => setNewField({...newField, area_acres: parseFloat(e.target.value)})} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Current Growth Stage</label>
-              <select className="mt-1 block w-full border rounded-md p-2"
-                value={newField.current_growth_stage} onChange={e => setNewField({...newField, current_growth_stage: e.target.value})}>
-                <option>Germination</option>
-                <option>Vegetative</option>
-                <option>Flowering</option>
-                <option>Maturity</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2 lg:col-span-4">
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Field</button>
-            </div>
-          </form>
+      <AnimatePresence>
+        {showAdd && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+            animate={{ opacity: 1, height: 'auto', overflow: 'visible' }}
+            exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+            transition={{ duration: 0.3 }}
+            className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8"
+          >
+            <h2 className="text-xl font-bold mb-6 text-gray-800">Field Registration</h2>
+            <form onSubmit={handleAddField} className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Field Name / Plot ID</label>
+                <input type="text" required className="block w-full border-gray-300 rounded-lg p-3 bg-gray-50 border shadow-inner focus:ring-2 focus:ring-green-500 focus:outline-none" 
+                  placeholder="e.g. North Plot A"
+                  value={newField.name} onChange={e => setNewField({...newField, name: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Crop Variety</label>
+                <select className="block w-full border-gray-300 rounded-lg p-3 bg-gray-50 border shadow-inner focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  value={newField.crop_type} onChange={e => setNewField({...newField, crop_type: e.target.value})}>
+                  <option>Rice</option>
+                  <option>Maize</option>
+                  <option>Chili</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Total Area (Acres)</label>
+                <input type="number" step="0.1" required className="block w-full border-gray-300 rounded-lg p-3 bg-gray-50 border shadow-inner focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  value={newField.area_acres} onChange={e => setNewField({...newField, area_acres: parseFloat(e.target.value)})} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Current Growth Stage</label>
+                <select className="block w-full border-gray-300 rounded-lg p-3 bg-gray-50 border shadow-inner focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  value={newField.current_growth_stage} onChange={e => setNewField({...newField, current_growth_stage: e.target.value})}>
+                  <option>Germination</option>
+                  <option>Vegetative</option>
+                  <option>Flowering</option>
+                  <option>Maturity</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2 lg:col-span-4 mt-2">
+                <button type="submit" className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md transition-colors w-full sm:w-auto">
+                  Save Field Profile
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {fields.length === 0 && !showAdd && (
+        <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300">
+          <Sprout className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-600">No Fields Found</h3>
+          <p className="text-gray-500 mt-2">Register your first field plot to begin receiving intelligent irrigation advisories.</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {fields.length === 0 && <p className="text-gray-500">No fields added yet. Add one to get started.</p>}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+      >
         {fields.map(field => (
-          <Link key={field.id} to={`/field/${field.id}`} className="block">
-            <div className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <Map className="w-8 h-8 text-blue-500 mr-3" />
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">{field.name}</h3>
-                  <p className="text-sm text-gray-500">{field.area_acres} Acres</p>
+          <motion.div variants={itemVariants} key={field.id}>
+            <Link to={`/field/${field.id}`} className="block h-full group">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 h-full group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                
+                <div className="flex items-start mb-6 relative z-10">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center mr-4 shadow-inner">
+                    <Map className="w-7 h-7 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-gray-900 leading-tight">{field.name}</h3>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-1">{field.area_acres} Acres</p>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-100 relative z-10">
+                  <div className="flex items-center text-sm text-gray-700">
+                    <div className="bg-green-100 p-1.5 rounded-lg mr-3">
+                      <Sprout className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <span className="block text-xs font-bold text-gray-400 uppercase">Crop Profile</span>
+                      <span className="font-semibold text-gray-800">{field.crop_type}</span> • <span className="text-gray-600">{field.current_growth_stage}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center text-sm text-gray-700 mt-2">
-                <Sprout className="w-5 h-5 text-green-500 mr-2" />
-                <span className="font-medium mr-1">{field.crop_type}:</span> {field.current_growth_stage}
-              </div>
-            </div>
-          </Link>
+            </Link>
+          </motion.div>
         ))}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
