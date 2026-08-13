@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../AuthContext';
-import { db } from '../firebase';
-import { doc, getDoc, collection, getDocs, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Droplet, CloudRain, Activity, CheckCircle, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SoilVisualizer from '../components/SoilVisualizer';
@@ -23,12 +21,12 @@ export default function FieldDetail() {
   const [recommendation, setRecommendation] = useState(null);
   const [history, setHistory] = useState({ readings: [], logs: [] });
 
-  const fetchField = async () => {
+  const fetchField = () => {
     try {
-      const docRef = doc(db, 'fields', id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setField({ id: docSnap.id, ...docSnap.data() });
+      const storedFields = JSON.parse(localStorage.getItem('demo_fields') || '[]');
+      const found = storedFields.find(f => f.id === id);
+      if (found) {
+        setField(found);
       } else {
         setField(null);
       }
@@ -41,22 +39,32 @@ export default function FieldDetail() {
 
   const fetchWeather = async () => {
     try {
-      const token = await currentUser.getIdToken();
-      const res = await axios.get(`${API_BASE}/weather?id=${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get(`${API_BASE}/weather?id=${id}`);
       setWeatherData(res.data);
     } catch (err) {
       console.error("Failed to fetch weather", err);
+      // Fallback mock weather so the UI always shows something
+      setWeatherData({ rain_probability_percent: 20, expected_rainfall_mm: 0, temperature_c: 30, source: 'mock' });
     }
   };
 
   const loadRecommendation = async () => {
+    if (!field) return;
     try {
-      const token = await currentUser.getIdToken();
-      const res = await axios.get(`${API_BASE}/recommendation?id=${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // For demo, we just pass the latest moisture to the backend stateless engine
+      const latestMoisture = history.readings.length > 0 ? history.readings[0].moisture_percent : 0;
+      const rainProb = weatherData ? weatherData.rain_probability_percent : 20;
+      const expRain = weatherData ? weatherData.expected_rainfall_mm : 0;
+      
+      const payload = {
+        moisture_percent: latestMoisture,
+        crop_type: field.crop_type,
+        stage: field.current_growth_stage,
+        rain_probability_percent: rainProb,
+        expected_rainfall_mm: expRain
+      };
+      
+      const res = await axios.post(`${API_BASE}/recommendation`, payload);
       setRecommendation(res.data);
     } catch (err) {
       console.error(err);
@@ -64,17 +72,16 @@ export default function FieldDetail() {
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = () => {
     try {
-      const mQ = query(collection(db, 'fields', id, 'moistureReadings'), orderBy('created_at', 'desc'));
-      const mSnap = await getDocs(mQ);
-      const mData = mSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      const iQ = query(collection(db, 'fields', id, 'irrigationLogs'), orderBy('logged_at', 'desc'));
-      const iSnap = await getDocs(iQ);
-      const iData = iSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      setHistory({ readings: mData, logs: iData });
+      const allReadings = JSON.parse(localStorage.getItem('demo_moisture_' + id) || '[]');
+      const allLogs = JSON.parse(localStorage.getItem('demo_logs_' + id) || '[]');
+      
+      // Sort descending by date
+      allReadings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      allLogs.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+      
+      setHistory({ readings: allReadings, logs: allLogs });
     } catch (err) {
       console.error(err);
     }
@@ -88,34 +95,47 @@ export default function FieldDetail() {
     }
   }, [id, currentUser]);
 
-  const handleLogMoisture = async (e) => {
+  const handleLogMoisture = (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'fields', id, 'moistureReadings'), {
+      const newReading = {
+        id: 'reading_' + Date.now(),
         moisture_percent: parseFloat(moisture),
-        created_at: serverTimestamp(),
+        created_at: new Date().toISOString(),
         source: 'manual'
-      });
+      };
+      
+      const allReadings = JSON.parse(localStorage.getItem('demo_moisture_' + id) || '[]');
+      allReadings.push(newReading);
+      localStorage.setItem('demo_moisture_' + id, JSON.stringify(allReadings));
+      
       alert("Reading logged successfully!");
       setMoisture('');
       setActiveTab('recommendation');
-      loadRecommendation();
       fetchHistory(); // Refresh visualizer data
+      // Recommendation must be loaded AFTER history state updates
+      setTimeout(() => loadRecommendation(), 100);
     } catch (err) {
       console.error(err);
       alert("Failed to log moisture");
     }
   };
 
-  const handleLogIrrigation = async (actionTaken) => {
+  const handleLogIrrigation = (actionTaken) => {
     try {
-      await addDoc(collection(db, 'fields', id, 'irrigationLogs'), {
+      const newLog = {
+        id: 'log_' + Date.now(),
         recommendation: recommendation.recommendation,
         recommended_amount_mm: recommendation.amount_mm,
         action_taken: actionTaken,
         actual_amount_mm: actionTaken === 'irrigated' ? recommendation.amount_mm : 0,
-        logged_at: serverTimestamp()
-      });
+        logged_at: new Date().toISOString()
+      };
+      
+      const allLogs = JSON.parse(localStorage.getItem('demo_logs_' + id) || '[]');
+      allLogs.push(newLog);
+      localStorage.setItem('demo_logs_' + id, JSON.stringify(allLogs));
+      
       alert("Action logged successfully!");
       setRecommendation(null);
       fetchHistory();
@@ -257,7 +277,7 @@ export default function FieldDetail() {
                         <tbody className="divide-y divide-gray-100 bg-white">
                           {history.readings.map(r => (
                             <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="whitespace-nowrap py-4 pl-5 pr-3 text-sm text-gray-900">{r.created_at ? new Date(r.created_at.toDate ? r.created_at.toDate() : Date.now()).toLocaleDateString() : 'Just now'}</td>
+                              <td className="whitespace-nowrap py-4 pl-5 pr-3 text-sm text-gray-900">{new Date(r.created_at).toLocaleDateString()}</td>
                               <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-blue-600">{r.moisture_percent}%</td>
                             </tr>
                           ))}
@@ -279,7 +299,7 @@ export default function FieldDetail() {
                         <tbody className="divide-y divide-gray-100 bg-white">
                           {history.logs.map(r => (
                             <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="whitespace-nowrap py-4 pl-5 pr-3 text-sm text-gray-900">{r.logged_at ? new Date(r.logged_at.toDate ? r.logged_at.toDate() : Date.now()).toLocaleDateString() : 'Just now'}</td>
+                              <td className="whitespace-nowrap py-4 pl-5 pr-3 text-sm text-gray-900">{new Date(r.logged_at).toLocaleDateString()}</td>
                               <td className="whitespace-nowrap px-3 py-4 text-sm font-medium">
                                 <span className={r.action_taken === 'irrigated' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800'}>
                                   {r.action_taken}

@@ -1,45 +1,22 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import React, { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [role, setRole] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        // Fetch custom claims to get role
-        try {
-          const idTokenResult = await user.getIdTokenResult();
-          setRole(idTokenResult.claims.role || 'farmer');
-        } catch (e) {
-          console.error("Error fetching token claims", e);
-          setRole('farmer');
-        }
-      } else {
-        setRole(null);
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
+  // HACKATHON: No login required. Always logged in as demo farmer.
+  const [currentUser] = useState({ uid: 'demo_user_123', email: 'demo@agrisense.app' });
+  const [role] = useState('farmer');
 
   const value = {
     currentUser,
-    role
+    role,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

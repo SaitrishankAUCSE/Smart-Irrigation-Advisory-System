@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { db } from '../firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { PlusCircle, Sprout, Map, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,14 +14,13 @@ export default function FarmerDashboard() {
     name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative'
   });
 
-  const fetchFields = async () => {
+  const fetchFields = () => {
     try {
-      const q = query(collection(db, 'fields'), where('user_id', '==', currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      const fieldsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFields(fieldsData);
+      const storedFields = JSON.parse(localStorage.getItem('demo_fields') || '[]');
+      setFields(storedFields);
     } catch (err) {
       console.error(err);
+      setFields([]);
     } finally {
       setLoading(false);
     }
@@ -33,14 +30,19 @@ export default function FarmerDashboard() {
     if (currentUser) fetchFields();
   }, [currentUser]);
 
-  const handleAddField = async (e) => {
+  const handleAddField = (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'fields'), {
+      const newFieldData = {
         ...newField,
+        id: 'field_' + Date.now(),
         user_id: currentUser.uid,
-        created_at: serverTimestamp()
-      });
+        created_at: new Date().toISOString()
+      };
+      const storedFields = JSON.parse(localStorage.getItem('demo_fields') || '[]');
+      const updatedFields = [...storedFields, newFieldData];
+      localStorage.setItem('demo_fields', JSON.stringify(updatedFields));
+      
       setShowAdd(false);
       setNewField({ name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative' });
       fetchFields();

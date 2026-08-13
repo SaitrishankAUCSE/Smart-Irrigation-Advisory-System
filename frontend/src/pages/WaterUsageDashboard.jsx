@@ -1,36 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
-import { useAuth } from '../AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, Target, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-
 export default function WaterUsageDashboard() {
   const { id } = useParams();
-  const { currentUser } = useAuth();
   const [usageData, setUsageData] = useState([]);
   const [adherence, setAdherence] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (currentUser) {
-      fetchAnalytics();
-    }
-  }, [id, currentUser]);
+    fetchAnalytics();
+  }, [id]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = () => {
     try {
-      const token = await currentUser.getIdToken();
-      const headers = { Authorization: `Bearer ${token}` };
+      const logs = JSON.parse(localStorage.getItem('demo_logs_' + id) || '[]');
       
-      const usageRes = await axios.get(`${API_BASE}/analytics/water-usage?id=${id}`, { headers });
-      setUsageData(usageRes.data || []);
+      // Build water usage by date
+      const usageDict = {};
+      let adheredCount = 0;
       
-      const adherenceRes = await axios.get(`${API_BASE}/analytics/adherence?id=${id}`, { headers });
-      setAdherence(adherenceRes.data.adherence_percent);
+      for (const log of logs) {
+        if (log.logged_at) {
+          const dateStr = new Date(log.logged_at).toLocaleDateString();
+          usageDict[dateStr] = (usageDict[dateStr] || 0) + (log.actual_amount_mm || 0);
+        }
+        
+        const r = log.recommendation;
+        const a = log.action_taken;
+        if ((r === 'irrigate' && a === 'irrigated') || (r === 'wait' && a === 'skipped')) {
+          adheredCount++;
+        }
+      }
+      
+      const usageList = Object.entries(usageDict).map(([date, amount]) => ({
+        date,
+        actual_amount_mm: amount
+      }));
+      
+      setUsageData(usageList);
+      setAdherence(logs.length > 0 ? Math.round((adheredCount / logs.length) * 100) : 100);
     } catch (err) {
       console.error(err);
     } finally {

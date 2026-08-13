@@ -4,37 +4,20 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { Droplet } from 'lucide-react';
 
+import { useAuth } from '../AuthContext';
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { fakeLogin } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    try {
-      try {
-        // ALWAYS use the demo account to guarantee success, regardless of what they type.
-        await signInWithEmailAndPassword(auth, 'demo.farmer@example.com', 'password123');
-      } catch (signInErr) {
-        // If the demo account doesn't exist yet, create it silently!
-        const { createUserWithEmailAndPassword } = await import('firebase/auth');
-        const { doc, setDoc } = await import('firebase/firestore');
-        const { db } = await import('../firebase');
-        
-        const userCredential = await createUserWithEmailAndPassword(auth, 'demo.farmer@example.com', 'password123');
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
-          email: 'demo.farmer@example.com',
-          name: 'Demo Farmer',
-          role: 'farmer',
-          createdAt: new Date()
-        });
-      }
-      navigate('/');
-    } catch (err) {
-      console.error(err);
-      setError('An error occurred. Please try again.');
-    }
+    // HACKATHON BYPASS: Ignore what they typed, just let them in instantly!
+    fakeLogin();
+    navigate('/');
   };
 
   return (
