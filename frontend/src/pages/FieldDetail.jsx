@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getField, getMoistureReadings, getIrrigationLogs, addMoistureReading, addIrrigationLog, logUserAction, toDate } from '../services/dataService';
-import { Droplet, CloudRain, Activity, CheckCircle, Clock, ArrowLeft, BarChart3, Thermometer, Wind, AlertTriangle, Sparkles, Layers, ShieldCheck, Zap } from 'lucide-react';
+import { Droplet, CloudRain, Activity, CheckCircle, Clock, ArrowLeft, BarChart3, Thermometer, Wind, AlertTriangle, Sparkles, Layers, Volume2, VolumeX, Languages, Timer, Gauge, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SoilVisualizer from '../components/SoilVisualizer';
 
@@ -47,6 +47,16 @@ const CROP_RULES = {
 
 const DEFAULT_RULE = { moisture_threshold_percent: 50, water_requirement_mm_per_day: 5.0, kc: 0.8 };
 
+const INDIAN_LANGUAGES = [
+  { code: 'en', name: 'English', native: 'English' },
+  { code: 'te', name: 'Telugu', native: 'తెలుగు' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
+  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ' },
+  { code: 'mr', name: 'Marathi', native: 'मराठी' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা' }
+];
+
 export default function FieldDetail() {
   const { id } = useParams();
   const { currentUser } = useAuth();
@@ -58,6 +68,10 @@ export default function FieldDetail() {
   const [recommendation, setRecommendation] = useState(null);
   const [history, setHistory] = useState({ readings: [], logs: [] });
   const [submitting, setSubmitting] = useState(false);
+
+  // Multi-Language & AI Voice State
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const fetchField = async () => {
     try {
@@ -100,9 +114,20 @@ export default function FieldDetail() {
     }
   }, [id, currentUser]);
 
+  // Clean up speech synthesis when component unmounts
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   const loadRecommendation = () => {
     if (!field) return;
     setRecommendation(null);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
 
     const latestMoisture = history.readings.length > 0 ? history.readings[0].moisture_percent : 0;
     const rainProb = weatherData ? weatherData.rain_probability_percent : 20;
@@ -117,61 +142,131 @@ export default function FieldDetail() {
     const dailyBaseNeed = rule.water_requirement_mm_per_day;
     const kc = rule.kc || 1.0;
 
-    // High Precision FAO-56 Calculation
+    // High Precision FAO-56 Evapotranspiration Calculations
     const effectiveRainMm = rainProb >= 60 ? Math.round((expRain * 0.8) * 10) / 10 : 0.0;
     const tempFactor = 1.0 + Math.max(0.0, (tempC - 25.0) / 50.0);
     const etcMm = Math.round((dailyBaseNeed * kc * tempFactor) * 10) / 10;
+    const moistureDeficitPct = Math.max(0, threshold - latestMoisture);
 
     let result;
     if (latestMoisture >= threshold) {
       result = {
         recommendation: "wait",
         amount_mm: 0.0,
+        pump_runtime_mins: 0,
         urgency: "Optimal",
-        reason: `Soil moisture (${latestMoisture}%) is above the optimal ${threshold}% threshold for ${stage} stage ${crop}. No water stress detected.`,
+        moistureDeficitPct,
         threshold,
         dailyNeed: dailyBaseNeed,
         moisture: latestMoisture,
         etcMm,
         effectiveRainMm,
-        kc
+        kc,
+        translations: {
+          en: `Soil moisture (${latestMoisture}%) is above the optimal ${threshold}% target for ${crop} during the ${stage} stage. No irrigation needed.`,
+          te: `మట్టి తేమ (${latestMoisture}%) ప్రస్తుతం సరైన స్థాయిలో ఉంది (${threshold}%). పంట: ${crop} (${stage} దశ). ఇప్పుడు నీరు పట్టడం అవసరం లేదు.`,
+          hi: `मिट्टी की नमी (${latestMoisture}%) वर्तमान में अनुकूलतम स्तर (${threshold}%) पर है। फसल: ${crop} (${stage} चरण)। अभी सिंचाई की आवश्यकता नहीं है।`,
+          ta: `மண் ஈரப்பதம் (${latestMoisture}%) உகந்த அளவில் உள்ளது (${threshold}%). பயிர்: ${crop} (${stage} நிலை). இப்போது பாசனம் தேவையில்லை.`,
+          kn: `ಮಣ್ಣಿನ ತೇವಾಂಶ (${latestMoisture}%) ಸೂಕ್ತ ಮಟ್ಟದಲ್ಲಿದೆ (${threshold}%). ಬೆಳೆ: ${crop} (${stage} ಹಂತ). ಈಗ ನೀರಾವರಿ ಅಗತ್ಯವಿಲ್ಲ.`,
+          mr: `मातीची ओलावा (${latestMoisture}%) इष्टतम पातळीवर आहे (${threshold}%). पीक: ${crop} (${stage} टप्पा). सध्या सिंचनाची गरज नाही.`,
+          bn: `মাটির আর্দ্রতা (${latestMoisture}%) সর্বোত্তম স্তরে রয়েছে (${threshold}%)। ফসল: ${crop} (${stage} পর্যায়)। এখন সেচের প্রয়োজন নেই।`
+        }
       };
     } else {
-      const deficitPct = threshold - latestMoisture;
-      const grossDeficitMm = Math.round((etcMm * (1.0 + (deficitPct / threshold))) * 10) / 10;
+      const grossDeficitMm = Math.round((etcMm * (1.0 + (moistureDeficitPct / threshold))) * 10) / 10;
       const netRecommendedMm = Math.round(Math.max(0.0, grossDeficitMm - effectiveRainMm) * 10) / 10;
+      const pumpRuntimeMins = Math.round(netRecommendedMm * (field.area_acres || 1.0) * 12);
 
       if (netRecommendedMm <= 0.5) {
         result = {
           recommendation: "wait",
           amount_mm: 0.0,
+          pump_runtime_mins: 0,
           urgency: "Optimal",
-          reason: `Expected rainfall (${effectiveRainMm}mm) will sufficiently replenish soil moisture. Hold off on irrigation.`,
+          moistureDeficitPct,
           threshold,
           dailyNeed: dailyBaseNeed,
           moisture: latestMoisture,
           etcMm,
           effectiveRainMm,
-          kc
+          kc,
+          translations: {
+            en: `Expected rain (${effectiveRainMm}mm) will sufficiently replenish soil moisture. Hold off on irrigation.`,
+            te: `రాబోయే వర్షం (${effectiveRainMm}mm) మట్టి తేమను భర్తీ చేస్తుంది. నీటిపారుదల నిలిపివేయండి.`,
+            hi: `अपेक्षित बारिश (${effectiveRainMm} मिमी) मिट्टी की नमी को पूरा करेगी। सिंचाई रोकें।`,
+            ta: `எதிர்பார்க்கப்படும் மழை (${effectiveRainMm} மிமீ) மண் ஈரப்பதத்தை பூர்த்தி செய்யும். பாசனத்தை நிறுத்துங்கள்.`,
+            kn: `ನಿರೀಕ್ಷಿತ ಮಳೆಯು (${effectiveRainMm}mm) ಮಣ್ಣಿನ ತೇವಾಂಶವನ್ನು ಪೂರೈಸುತ್ತದೆ. ನೀರಾವರಿಯನ್ನು ತಡೆಹಿಡಿಯಿರಿ.`,
+            mr: `अपेक्षित पाऊस (${effectiveRainMm} मिमी) मातीची ओलावा पूर्ण करेल. सिंचन थांबवा.`,
+            bn: `প্রত্যাশিত বৃষ্টিপাত (${effectiveRainMm} মিমি) মাটির আর্দ্রতা পূরণ করবে। সেচ স্থগিত রাখুন।`
+          }
         };
       } else {
         const urgency = latestMoisture < (threshold * 0.5) ? "Critical" : "Moderate";
         result = {
           recommendation: "irrigate",
           amount_mm: netRecommendedMm,
+          pump_runtime_mins: pumpRuntimeMins,
           urgency: urgency,
-          reason: `Soil moisture (${latestMoisture}%) is below the ${threshold}% threshold. Evapotranspiration loss is ~${etcMm}mm/day (Kc=${kc}). Recommended irrigation: ${netRecommendedMm}mm.`,
+          moistureDeficitPct,
           threshold,
           dailyNeed: dailyBaseNeed,
           moisture: latestMoisture,
           etcMm,
           effectiveRainMm,
-          kc
+          kc,
+          translations: {
+            en: `Irrigation Required: ${netRecommendedMm} mm. Run 5HP Motor Pump for approx ${pumpRuntimeMins} minutes. Soil moisture (${latestMoisture}%) is ${moistureDeficitPct.toFixed(1)}% below target for ${crop} (${stage} stage).`,
+            te: `నీటిపారుదల అవసరం: ${netRecommendedMm} mm. పంప్ మోటార్ నిరంతరం ~${pumpRuntimeMins} నిమిషాలు నడపండి. మట్టి తేమ శాతాన్ని పెంచడానికి నీరు పట్టండి (${crop} - ${stage} దశ).`,
+            hi: `सिंचाई आवश्यक: ${netRecommendedMm} मिमी। पंप मोटर को लगभग ${pumpRuntimeMins} मिनट तक चलाएं। मिट्टी में ${moistureDeficitPct.toFixed(1)}% की कमी है (${crop} - ${stage} चरण)।`,
+            ta: `பாசனம் தேவை: ${netRecommendedMm} மிமீ. பம்ப் மோட்டாரை सुमारे ${pumpRuntimeMins} நிமிடங்கள் இயக்கவும். மண் ஈரப்பதம் குறைவாக உள்ளது (${crop} - ${stage} நிலை).`,
+            kn: `ನೀರಾವರಿ ಅಗತ್ಯವಿದೆ: ${netRecommendedMm} mm. ಪಂಪ್ ಮೋಟಾರ್ ಅನ್ನು ಸುಮಾರು ${pumpRuntimeMins} ನಿಮಿಷಗಳ ಕಾಲ ಚಾಲನೆ ಮಾಡಿ (${crop} - ${stage} ಹಂತ).`,
+            mr: `सिंचन आवश्यक: ${netRecommendedMm} मिमी. पंप मोटर सुमारे ${pumpRuntimeMins} मिनिटे चालवा. मातीत ओलावा कमी आहे (${crop} - ${stage} टप्पा).`,
+            bn: `সেচ প্রয়োজন: ${netRecommendedMm} মিমি। পাম্প মোটর প্রায় ${pumpRuntimeMins} মিনিটের জন্য চালান (${crop} - ${stage} পর্যায়)।`
+          }
         };
       }
     }
     
     setTimeout(() => setRecommendation(result), 500);
+  };
+
+  // AI Voice Speaker Handler
+  const handleSpeakAdvisory = () => {
+    if (!recommendation) return;
+
+    if (isSpeaking) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    if (!('speechSynthesis' in window)) {
+      alert("Text-to-Speech is not supported on this browser.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const textToRead = recommendation.translations[selectedLanguage] || recommendation.translations.en;
+    const langMap = {
+      en: 'en-IN',
+      te: 'te-IN',
+      hi: 'hi-IN',
+      ta: 'ta-IN',
+      kn: 'kn-IN',
+      mr: 'mr-IN',
+      bn: 'bn-IN'
+    };
+
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.lang = langMap[selectedLanguage] || 'en-US';
+    utterance.rate = 0.95;
+
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
   };
 
   const handleLogMoisture = async (e) => {
@@ -197,6 +292,9 @@ export default function FieldDetail() {
 
   const handleLogIrrigation = async (actionTaken) => {
     setSubmitting(true);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+
     try {
       await addIrrigationLog(id, {
         recommendation: recommendation.recommendation,
@@ -397,31 +495,31 @@ export default function FieldDetail() {
 
               {/* RECOMMENDATION TAB */}
               {activeTab === 'recommendation' && (
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-3xl mx-auto space-y-6">
                   {!recommendation ? (
                     <div className="text-center py-16 flex flex-col items-center">
                       <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4" />
-                      <p className="text-emerald-900 font-black">Executing FAO-56 Evapotranspiration Algorithm...</p>
-                      <p className="text-xs text-slate-500 font-medium mt-1">Combining soil moisture + rain predictions + crop stage coefficients</p>
+                      <p className="text-emerald-900 font-black">Executing High-Precision FAO-56 Advisory Engine...</p>
+                      <p className="text-xs text-slate-500 font-medium mt-1">Calculating evapotranspiration loss rate & effective rainfall offset</p>
                     </div>
                   ) : (
                     <motion.div 
-                      initial={{ scale: 0.95, opacity: 0 }}
+                      initial={{ scale: 0.96, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className={`rounded-3xl border-2 overflow-hidden shadow-xl ${
+                      className={`rounded-3xl border-2 overflow-hidden shadow-2xl ${
                         recommendation.recommendation === 'irrigate' 
-                          ? 'border-blue-200 bg-white' 
-                          : 'border-emerald-200 bg-white'
+                          ? 'border-blue-300 bg-white' 
+                          : 'border-emerald-300 bg-white'
                       }`}
                     >
-                      {/* Header */}
+                      {/* Result Header */}
                       <div className={`p-8 text-center ${
                         recommendation.recommendation === 'irrigate' 
                           ? 'bg-gradient-to-b from-blue-50 to-white' 
                           : 'bg-gradient-to-b from-emerald-50 to-white'
                       }`}>
-                        <div className="inline-flex items-center space-x-2 bg-white/80 px-3 py-1 rounded-full border border-slate-200 text-xs font-bold text-slate-700 mb-3 shadow-xs">
-                          <span>Urgency: {recommendation.urgency}</span>
+                        <div className="inline-flex items-center space-x-2 bg-white/90 px-4 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-800 mb-4 shadow-xs">
+                          <span>Urgency Level: {recommendation.urgency}</span>
                         </div>
                         <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
                           recommendation.recommendation === 'irrigate' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
@@ -440,26 +538,89 @@ export default function FieldDetail() {
                         </h2>
                       </div>
 
-                      {/* Details */}
+                      {/* Multi-Language & AI Voice Controls */}
+                      <div className="px-6 sm:px-8 py-4 bg-emerald-50/70 border-y border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        {/* Language Selector */}
+                        <div className="flex items-center space-x-2 w-full sm:w-auto">
+                          <Languages className="w-4 h-4 text-emerald-800 shrink-0" />
+                          <span className="text-xs font-extrabold text-emerald-900 shrink-0">Language:</span>
+                          <select 
+                            value={selectedLanguage}
+                            onChange={e => setSelectedLanguage(e.target.value)}
+                            className="bg-white border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs w-full sm:w-auto"
+                          >
+                            {INDIAN_LANGUAGES.map(lang => (
+                              <option key={lang.code} value={lang.code}>
+                                {lang.native} ({lang.name})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* AI Voice Speaker Button */}
+                        <button
+                          onClick={handleSpeakAdvisory}
+                          className={`flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl font-black text-xs transition-all shadow-md w-full sm:w-auto ${
+                            isSpeaking 
+                              ? 'bg-amber-500 text-amber-950 animate-pulse' 
+                              : 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                          }`}
+                        >
+                          {isSpeaking ? (
+                            <><VolumeX className="w-4 h-4" /> Stop AI Voice</>
+                          ) : (
+                            <><Volume2 className="w-4 h-4" /> 🔊 Listen Advisory ({INDIAN_LANGUAGES.find(l => l.code === selectedLanguage)?.native})</>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Description Box */}
                       <div className="p-6 sm:p-8 space-y-6">
-                        <p className="text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/60 font-medium">{recommendation.reason}</p>
-                        
-                        <div className="grid grid-cols-4 gap-2 text-center">
-                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
-                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Moisture</p>
-                            <p className="text-base font-black text-slate-900">{recommendation.moisture}%</p>
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80">
+                          <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1.5 flex items-center">
+                            <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-600" /> Localized Advisory Explanation:
+                          </p>
+                          <p className="text-slate-800 text-sm leading-relaxed font-bold">
+                            {recommendation.translations[selectedLanguage] || recommendation.translations.en}
+                          </p>
+                        </div>
+
+                        {/* Granular Technical Breakdown */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
+                              <Timer className="w-3 h-3 mr-1 text-amber-600" /> Pump Motor
+                            </p>
+                            <p className="text-base font-black text-slate-900 mt-1">
+                              ~{recommendation.pump_runtime_mins || 0} mins
+                            </p>
                           </div>
-                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
-                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Threshold</p>
-                            <p className="text-base font-black text-slate-900">{recommendation.threshold}%</p>
+                          
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
+                              <Gauge className="w-3 h-3 mr-1 text-blue-600" /> Soil Deficit
+                            </p>
+                            <p className="text-base font-black text-slate-900 mt-1">
+                              {recommendation.moistureDeficitPct ? recommendation.moistureDeficitPct.toFixed(1) : 0}%
+                            </p>
                           </div>
-                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
-                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Daily Loss</p>
-                            <p className="text-base font-black text-slate-900">{recommendation.etcMm}mm</p>
+
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
+                              <Droplet className="w-3 h-3 mr-1 text-teal-600" /> ET Loss
+                            </p>
+                            <p className="text-base font-black text-slate-900 mt-1">
+                              {recommendation.etcMm} mm/day
+                            </p>
                           </div>
-                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
-                            <p className="text-[9px] text-slate-500 font-extrabold uppercase">Crop Kc</p>
-                            <p className="text-base font-black text-slate-900">{recommendation.kc}</p>
+
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
+                              <CloudRain className="w-3 h-3 mr-1 text-indigo-600" /> Usable Rain
+                            </p>
+                            <p className="text-base font-black text-slate-900 mt-1">
+                              {recommendation.effectiveRainMm} mm
+                            </p>
                           </div>
                         </div>
 
