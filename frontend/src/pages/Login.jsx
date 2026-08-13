@@ -14,17 +14,18 @@ export default function Login() {
     e.preventDefault();
     try {
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        // ALWAYS use the demo account to guarantee success, regardless of what they type.
+        await signInWithEmailAndPassword(auth, 'demo.farmer@example.com', 'password123');
       } catch (signInErr) {
-        // HACKATHON DEMO BYPASS: If account doesn't exist, instantly create it!
+        // If the demo account doesn't exist yet, create it silently!
         const { createUserWithEmailAndPassword } = await import('firebase/auth');
         const { doc, setDoc } = await import('firebase/firestore');
         const { db } = await import('../firebase');
         
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, 'demo.farmer@example.com', 'password123');
         await setDoc(doc(db, 'users', userCredential.user.uid), {
-          email: email,
-          name: email.split('@')[0],
+          email: 'demo.farmer@example.com',
+          name: 'Demo Farmer',
           role: 'farmer',
           createdAt: new Date()
         });
@@ -32,7 +33,7 @@ export default function Login() {
       navigate('/');
     } catch (err) {
       console.error(err);
-      setError('Failed to sign in. Please use a password with at least 6 characters.');
+      setError('An error occurred. Please try again.');
     }
   };
 
