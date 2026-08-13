@@ -114,8 +114,15 @@ export default function FieldDetail() {
     }
   }, [id, currentUser]);
 
-  // Clean up speech synthesis when component unmounts
+  // Clean up speech synthesis when component unmounts and preload voices
   useEffect(() => {
+    if ('speechSynthesis' in window) {
+      // Trigger voice loading
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
     return () => {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -258,9 +265,27 @@ export default function FieldDetail() {
       bn: 'bn-IN'
     };
 
+    const targetLang = langMap[selectedLanguage] || 'en-US';
     const utterance = new SpeechSynthesisUtterance(textToRead);
-    utterance.lang = langMap[selectedLanguage] || 'en-US';
-    utterance.rate = 0.95;
+    utterance.lang = targetLang;
+    utterance.rate = 0.90; // Slightly slower for clearer regional pronunciation
+
+    // Force browser to pick a specific voice for the selected language
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      // 1. Try exact lang match (e.g. 'te-IN')
+      let preferredVoice = voices.find(v => v.lang === targetLang);
+      
+      // 2. Try prefix match (e.g. 'te')
+      if (!preferredVoice) {
+        preferredVoice = voices.find(v => v.lang.startsWith(selectedLanguage));
+      }
+      
+      // 3. Set voice if found
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+    }
 
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
