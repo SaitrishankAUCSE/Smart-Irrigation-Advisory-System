@@ -8550,7 +8550,7 @@ a[href*="awwwards"] {
     display: none !important;
 }
 
-/* Hide original logos */
+/* Hide original logos everywhere */
 a[aria-label="Fairventures Agroforestry Logo"] svg,
 a[aria-label="Fairventures Agroforestry Logo"] img,
 a[aria-label="Fairventures Agroforestry Logo"] div[style*="background-image"],
@@ -8558,45 +8558,66 @@ a[aria-label="Fairventures Agroforestry Logo"] div[style*="background-image"],
     display: none !important;
 }
 
-/* Navbar Logo Styling */
+/* ===== NAVBAR LOGO ===== */
 a[aria-label="Fairventures Agroforestry Logo"] {
     text-decoration: none !important;
-    display: flex;
-    align-items: center;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-width: 140px !important;
 }
-a[aria-label="Fairventures Agroforestry Logo"]::after {
-    content: "AgriSense \A - by Quantum Coders";
-    white-space: pre;
-    font-size: 1.2rem;
+a[aria-label="Fairventures Agroforestry Logo"]::before {
+    content: "\1F331  AgriSense";
+    font-size: 1.4rem;
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1;
     color: #fff;
-    font-family: 'Inter', sans-serif;
-    display: block;
-    padding-left: 5px;
+    font-family: 'Inter', 'Outfit', sans-serif;
     letter-spacing: -0.5px;
 }
+a[aria-label="Fairventures Agroforestry Logo"]::after {
+    content: "Quantum Coders";
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    font-family: 'Inter', 'Outfit', sans-serif;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
 
-/* Footer Big Logo Styling */
+/* ===== FOOTER HERO LOGO ===== */
 .framer-1i6pim3 {
     display: flex !important;
+    flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    margin-bottom: 60px !important; /* Push the Let's talk button away */
     width: 100% !important;
+    margin-bottom: 40px !important;
 }
-.framer-1i6pim3::after {
-    content: "AgriSense \A - by Quantum Coders";
-    white-space: pre;
+.framer-1i6pim3::before {
+    content: "\1F331  AgriSense";
     font-size: clamp(3rem, 8vw, 6rem);
     font-weight: 800;
     line-height: 1;
     color: #fff;
-    font-family: 'Inter', sans-serif;
-    display: block;
+    font-family: 'Inter', 'Outfit', sans-serif;
     text-align: center;
-    letter-spacing: -2px;
-    text-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    letter-spacing: -3px;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.framer-1i6pim3::after {
+    content: "Quantum Coders";
+    font-size: clamp(0.7rem, 1.5vw, 1rem);
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    font-family: 'Inter', 'Outfit', sans-serif;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-top: 12px;
+    text-align: center;
 }
 </style></head>
 <body>
