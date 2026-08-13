@@ -3,9 +3,6 @@
   "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.py" },
-    { "source": "/login", "destination": "/app.html" },
-    { "source": "/register", "destination": "/app.html" },
-    { "source": "/admin", "destination": "/app.html" },
-    { "source": "/field/(.*)", "destination": "/app.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

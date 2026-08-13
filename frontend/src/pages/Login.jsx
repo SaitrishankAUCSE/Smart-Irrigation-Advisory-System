@@ -13,7 +13,8 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // HACKATHON DEMO BYPASS: Always log in as the demo farmer regardless of what is typed!
+      await signInWithEmailAndPassword(auth, 'demo.farmer@example.com', 'password123');
       navigate('/');
     } catch (err) {
       setError('Failed to sign in. Please check your credentials.');
