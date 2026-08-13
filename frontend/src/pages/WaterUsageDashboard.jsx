@@ -1,22 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, Target, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function WaterUsageDashboard() {
   const { id } = useParams();
+  const { currentUser } = useAuth();
   const [usageData, setUsageData] = useState([]);
   const [adherence, setAdherence] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [id]);
+    if (currentUser) {
+      fetchAnalytics();
+    }
+  }, [id, currentUser]);
 
-  const fetchAnalytics = () => {
+  const fetchAnalytics = async () => {
     try {
-      const logs = JSON.parse(localStorage.getItem('demo_logs_' + id) || '[]');
+      const logsSnap = await getDocs(collection(db, 'fields', id, 'irrigationLogs'));
+      const logs = logsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
       // Build water usage by date
       const usageDict = {};
@@ -24,7 +31,7 @@ export default function WaterUsageDashboard() {
       
       for (const log of logs) {
         if (log.logged_at) {
-          const dateStr = new Date(log.logged_at).toLocaleDateString();
+          const dateStr = new Date(log.logged_at.toDate ? log.logged_at.toDate() : Date.now()).toLocaleDateString();
           usageDict[dateStr] = (usageDict[dateStr] || 0) + (log.actual_amount_mm || 0);
         }
         

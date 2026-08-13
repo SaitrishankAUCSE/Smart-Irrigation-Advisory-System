@@ -1,17 +1,24 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  // HACKATHON: No login required. Always logged in as demo farmer.
-  const [currentUser] = useState({ uid: 'demo_user_123', email: 'demo@agrisense.app' });
-  const [role] = useState('farmer');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    let name = localStorage.getItem('demo_username');
+    if (!name) {
+      name = prompt("Welcome to AgriSense! What is your name?") || "Anonymous Farmer";
+      localStorage.setItem('demo_username', name);
+    }
+    setCurrentUser({ uid: 'demo_user_' + name.replace(/\s+/g, '_').toLowerCase(), name: name });
+  }, []);
 
   const value = {
     currentUser,
-    role,
+    role: 'farmer'
   };
 
   return (

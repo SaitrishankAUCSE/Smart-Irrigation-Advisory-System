@@ -1,48 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
+import { db } from '../firebase';
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { PlusCircle, Sprout, Map, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FarmerDashboard() {
+  const { currentUser } = useAuth();
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const { currentUser } = useAuth();
-  
   const [newField, setNewField] = useState({
     name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative'
   });
 
-  const fetchFields = () => {
+  const fetchFields = async () => {
+    if (!currentUser) return;
     try {
-      const storedFields = JSON.parse(localStorage.getItem('demo_fields') || '[]');
-      setFields(storedFields);
+      const q = query(collection(db, 'fields'), where('user_id', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+      const fieldsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFields(fieldsData);
     } catch (err) {
       console.error(err);
-      setFields([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (currentUser) fetchFields();
+    fetchFields();
   }, [currentUser]);
 
-  const handleAddField = (e) => {
+  const handleAddField = async (e) => {
     e.preventDefault();
     try {
-      const newFieldData = {
+      await addDoc(collection(db, 'fields'), {
         ...newField,
-        id: 'field_' + Date.now(),
         user_id: currentUser.uid,
-        created_at: new Date().toISOString()
-      };
-      const storedFields = JSON.parse(localStorage.getItem('demo_fields') || '[]');
-      const updatedFields = [...storedFields, newFieldData];
-      localStorage.setItem('demo_fields', JSON.stringify(updatedFields));
-      
+        created_at: serverTimestamp()
+      });
       setShowAdd(false);
       setNewField({ name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative' });
       fetchFields();
