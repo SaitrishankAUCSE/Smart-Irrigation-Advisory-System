@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getIrrigationLogs, toDate } from '../services/dataService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ArrowLeft, Target, TrendingUp, Droplet, Printer } from 'lucide-react';
+import { ArrowLeft, Target, TrendingUp, Droplet, Printer, Award, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function WaterUsageDashboard() {
@@ -51,7 +51,7 @@ export default function WaterUsageDashboard() {
   if (!currentUser) return null;
   if (loading) return (
     <div className="flex items-center justify-center py-32">
-      <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
     </div>
   );
 
@@ -60,65 +60,75 @@ export default function WaterUsageDashboard() {
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       transition={{ duration: 0.3 }}
-      className="max-w-6xl mx-auto"
+      className="max-w-6xl mx-auto space-y-6"
     >
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Link to={`/field/${id}`} className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <Link to={`/field/${id}`} className="w-11 h-11 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl flex items-center justify-center hover:bg-emerald-900/60 transition-colors shadow-md text-emerald-300">
+            <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Water Analytics</h1>
-            <p className="text-sm text-gray-500">Usage trends and recommendation adherence</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">Water Telemetry & Analytics</h1>
+            <p className="text-sm text-emerald-200/80">Irrigation volume trends and recommendation adherence score</p>
           </div>
         </div>
         <button 
           onClick={() => window.print()}
-          className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 flex items-center shadow-sm transition-all font-medium text-sm"
+          className="px-5 py-3 bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 rounded-2xl hover:bg-emerald-900/60 flex items-center shadow-md transition-all font-bold text-sm"
         >
-          <Printer className="w-4 h-4 mr-2 text-gray-500" />
+          <Printer className="w-4 h-4 mr-2" />
           Export Report
         </button>
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Water Used</p>
-          <p className="text-2xl font-black text-gray-900 mt-1">{totalWater} <span className="text-sm font-normal text-gray-500">mm</span></p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-emerald-950/40 backdrop-blur-xl rounded-2xl border border-emerald-500/20 p-5 shadow-lg">
+          <div className="flex items-center text-xs font-bold text-emerald-400/80 uppercase tracking-wider mb-1">
+            <Droplet className="w-4 h-4 mr-1.5 text-blue-400" /> Total Water Applied
+          </div>
+          <p className="text-3xl font-black text-white">{totalWater} <span className="text-sm font-semibold text-emerald-300">mm</span></p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Adherence Rate</p>
-          <p className="text-2xl font-black text-gray-900 mt-1">{adherence}%</p>
+
+        <div className="bg-emerald-950/40 backdrop-blur-xl rounded-2xl border border-emerald-500/20 p-5 shadow-lg">
+          <div className="flex items-center text-xs font-bold text-emerald-400/80 uppercase tracking-wider mb-1">
+            <Award className="w-4 h-4 mr-1.5 text-amber-400" /> Advisory Adherence Rate
+          </div>
+          <p className="text-3xl font-black text-white">{adherence}%</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Data Points</p>
-          <p className="text-2xl font-black text-gray-900 mt-1">{usageData.length}</p>
+
+        <div className="bg-emerald-950/40 backdrop-blur-xl rounded-2xl border border-emerald-500/20 p-5 shadow-lg">
+          <div className="flex items-center text-xs font-bold text-emerald-400/80 uppercase tracking-wider mb-1">
+            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-400" /> Conservation Rating
+          </div>
+          <p className="text-xl font-black text-emerald-300 mt-1">
+            {adherence >= 80 ? '🌟 Grade A+ Efficient' : '👍 Good Efficiency'}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart */}
         <div className="lg:col-span-2">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
-              <TrendingUp className="w-4 h-4 mr-2 text-blue-500" />
-              Daily Water Usage (mm)
+          <div className="bg-emerald-950/40 backdrop-blur-xl p-6 rounded-3xl shadow-2xl border border-emerald-500/20 h-full">
+            <h2 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-4 flex items-center">
+              <TrendingUp className="w-4 h-4 mr-2 text-blue-400" />
+              Daily Water Usage Trend (mm)
             </h2>
             <div className="h-72 w-full">
               {usageData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={usageData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{fontSize: 11, fill: '#9ca3af'}} axisLine={false} tickLine={false} />
-                    <YAxis tick={{fontSize: 11, fill: '#9ca3af'}} axisLine={false} tickLine={false} />
-                    <RechartsTooltip cursor={{fill: '#f9fafb'}} contentStyle={{borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.07)', fontSize: '13px'}} />
-                    <Bar dataKey="actual_amount_mm" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Water (mm)" barSize={32} />
+                  <BarChart data={usageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(16, 185, 129, 0.1)" />
+                    <XAxis dataKey="date" tick={{fontSize: 11, fill: '#6EE7B7'}} axisLine={false} tickLine={false} />
+                    <YAxis tick={{fontSize: 11, fill: '#6EE7B7'}} axisLine={false} tickLine={false} />
+                    <RechartsTooltip cursor={{fill: 'rgba(16, 185, 129, 0.05)'}} contentStyle={{backgroundColor: '#064E3B', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#fff', fontSize: '12px'}} />
+                    <Bar dataKey="actual_amount_mm" fill="#3B82F6" radius={[8, 8, 0, 0]} name="Water (mm)" barSize={32} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm">
-                  <Droplet className="w-5 h-5 mr-2" /> No irrigation data yet
+                <div className="h-full flex items-center justify-center text-emerald-200/50 bg-slate-950/40 rounded-2xl border border-dashed border-emerald-500/20 text-sm">
+                  <Droplet className="w-5 h-5 mr-2 text-blue-400" /> No irrigation action records available yet
                 </div>
               )}
             </div>
@@ -127,30 +137,30 @@ export default function WaterUsageDashboard() {
 
         {/* Adherence Ring */}
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center justify-center h-full min-h-[320px]">
-            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
-              <Target className="w-7 h-7 text-blue-600" />
+          <div className="bg-emerald-950/40 backdrop-blur-xl p-6 rounded-3xl shadow-2xl border border-emerald-500/20 flex flex-col items-center text-center justify-center h-full min-h-[320px]">
+            <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl border border-emerald-500/30 flex items-center justify-center mb-4 text-emerald-400">
+              <Target className="w-8 h-8" />
             </div>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Adherence Score</h2>
-            <p className="text-gray-400 text-xs mb-6">How often you follow the advisory</p>
+            <h2 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Adherence Score</h2>
+            <p className="text-emerald-200/60 text-xs mb-6 max-w-xs">Measures how often irrigation decisions match AI recommendations.</p>
             
             <div className="relative">
-              <svg className="w-32 h-32 transform -rotate-90">
-                <circle cx="64" cy="64" r="56" stroke="#e5e7eb" strokeWidth="8" fill="none" />
+              <svg className="w-36 h-36 transform -rotate-90">
+                <circle cx="72" cy="72" r="62" stroke="rgba(16, 185, 129, 0.15)" strokeWidth="10" fill="none" />
                 <motion.circle 
-                  cx="64" cy="64" r="56" 
-                  stroke="#3b82f6" 
-                  strokeWidth="8" 
+                  cx="72" cy="72" r="62" 
+                  stroke="#10B981" 
+                  strokeWidth="10" 
                   fill="none" 
-                  strokeDasharray={`${2 * Math.PI * 56}`}
-                  initial={{ strokeDashoffset: 2 * Math.PI * 56 }}
-                  animate={{ strokeDashoffset: (2 * Math.PI * 56) * (1 - ((adherence || 0) / 100)) }}
+                  strokeDasharray={`${2 * Math.PI * 62}`}
+                  initial={{ strokeDashoffset: 2 * Math.PI * 62 }}
+                  animate={{ strokeDashoffset: (2 * Math.PI * 62) * (1 - ((adherence || 0) / 100)) }}
                   transition={{ duration: 1.5, ease: "easeOut" }}
                   strokeLinecap="round" 
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl font-black text-gray-900">{adherence !== null ? adherence : '--'}%</span>
+                <span className="text-4xl font-black text-white">{adherence !== null ? adherence : '--'}%</span>
               </div>
             </div>
           </div>

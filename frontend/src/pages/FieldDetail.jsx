@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getField, getMoistureReadings, getIrrigationLogs, addMoistureReading, addIrrigationLog, logUserAction, toDate } from '../services/dataService';
-import { Droplet, CloudRain, Activity, CheckCircle, Clock, ArrowLeft, BarChart3, Thermometer, Wind, AlertTriangle } from 'lucide-react';
+import { Droplet, CloudRain, Activity, CheckCircle, Clock, ArrowLeft, BarChart3, Thermometer, Wind, AlertTriangle, Sparkles, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SoilVisualizer from '../components/SoilVisualizer';
 
@@ -27,7 +27,6 @@ const CROP_RULES = {
   }
 };
 
-// Default fallback rule for unknown crops
 const DEFAULT_RULE = { moisture_threshold_percent: 50, water_requirement_mm_per_day: 5.0 };
 
 export default function FieldDetail() {
@@ -54,7 +53,6 @@ export default function FieldDetail() {
   };
 
   const fetchWeather = () => {
-    // Mock weather data for hackathon demo — always works
     const mockWeather = {
       temperature_c: Math.round(25 + Math.random() * 10),
       rain_probability_percent: Math.round(Math.random() * 50),
@@ -86,7 +84,7 @@ export default function FieldDetail() {
 
   const loadRecommendation = () => {
     if (!field) return;
-    setRecommendation(null); // Reset to show loading
+    setRecommendation(null);
 
     const latestMoisture = history.readings.length > 0 ? history.readings[0].moisture_percent : 0;
     const rainProb = weatherData ? weatherData.rain_probability_percent : 20;
@@ -131,7 +129,6 @@ export default function FieldDetail() {
       };
     }
     
-    // Simulate advisory engine processing time
     setTimeout(() => setRecommendation(result), 600);
   };
 
@@ -180,23 +177,23 @@ export default function FieldDetail() {
   if (loading) return (
     <div className="flex items-center justify-center py-32">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-        <p className="text-gray-400 text-sm font-medium">Loading field data...</p>
+        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
+        <p className="text-emerald-300 text-sm font-medium">Fetching plot telemetry...</p>
       </div>
     </div>
   );
   if (!field) return (
-    <div className="text-center py-20">
+    <div className="text-center py-20 bg-emerald-950/40 rounded-3xl border border-emerald-500/20">
       <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-      <h2 className="text-xl font-bold text-gray-700">Field not found</h2>
-      <Link to="/" className="mt-4 inline-block text-blue-600 hover:underline font-medium">← Back to Dashboard</Link>
+      <h2 className="text-xl font-bold text-white">Field Plot Not Found</h2>
+      <Link to="/" className="mt-4 inline-block text-amber-400 hover:underline font-medium text-sm">← Back to Dashboard</Link>
     </div>
   );
 
   const tabs = [
     { key: 'log', label: 'Log Reading', icon: Droplet },
-    { key: 'recommendation', label: 'Advisory', icon: Activity },
-    { key: 'history', label: 'History', icon: Clock },
+    { key: 'recommendation', label: 'AI Advisory Engine', icon: Activity },
+    { key: 'history', label: 'History & Logs', icon: Clock },
   ];
 
   return (
@@ -204,62 +201,66 @@ export default function FieldDetail() {
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       transition={{ duration: 0.3 }}
-      className="max-w-6xl mx-auto"
+      className="max-w-6xl mx-auto space-y-6"
     >
-      {/* Top Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      {/* Top Header Navigation */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Link to="/" className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <Link to="/" className="w-11 h-11 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl flex items-center justify-center hover:bg-emerald-900/60 transition-colors shadow-md text-emerald-300">
+            <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{field.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">{field.name}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 {field.crop_type}
               </span>
-              <span className="text-gray-400">•</span>
-              <span className="text-sm text-gray-500 font-medium">{field.current_growth_stage} stage</span>
-              <span className="text-gray-400">•</span>
-              <span className="text-sm text-gray-500 font-medium">{field.area_acres} acres</span>
+              <span className="text-emerald-500/40">•</span>
+              <span className="text-sm text-emerald-200/80 font-medium">{field.current_growth_stage} stage</span>
+              <span className="text-emerald-500/40">•</span>
+              <span className="text-sm text-emerald-200/80 font-medium">{field.area_acres} acres</span>
             </div>
           </div>
         </div>
-        <Link to={`/field/${id}/analytics`} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 flex items-center shadow-sm transition-all font-medium text-sm">
-          <BarChart3 className="w-4 h-4 mr-2 text-blue-500" />
+        <Link to={`/field/${id}/analytics`} className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl hover:from-emerald-500 hover:to-teal-600 flex items-center shadow-lg transition-all font-bold text-sm">
+          <BarChart3 className="w-4 h-4 mr-2" />
           Water Analytics
         </Link>
       </div>
 
-      {/* Weather Strip */}
+      {/* Weather Telemetry Strip */}
       {weatherData && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 shadow-sm">
-          <div className="flex flex-wrap items-center gap-6 text-sm">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Weather Forecast</span>
-            <div className="flex items-center gap-1.5">
-              <Thermometer className="w-4 h-4 text-orange-500" />
-              <span className="font-semibold text-gray-700">{weatherData.temperature_c}°C</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CloudRain className="w-4 h-4 text-blue-500" />
-              <span className="font-semibold text-gray-700">{weatherData.rain_probability_percent}% rain</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Droplet className="w-4 h-4 text-cyan-500" />
-              <span className="font-semibold text-gray-700">{weatherData.expected_rainfall_mm}mm expected</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Wind className="w-4 h-4 text-gray-400" />
-              <span className="font-semibold text-gray-700">{weatherData.wind_speed_kmh} km/h</span>
+        <div className="bg-emerald-950/50 backdrop-blur-xl rounded-2xl border border-emerald-500/20 p-5 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
+            <span className="font-bold text-emerald-400 uppercase tracking-widest flex items-center">
+              <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-400" /> Weather Telemetry
+            </span>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-1.5 text-amber-300 font-semibold">
+                <Thermometer className="w-4 h-4 text-amber-400" />
+                <span>{weatherData.temperature_c}°C</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-blue-300 font-semibold">
+                <CloudRain className="w-4 h-4 text-blue-400" />
+                <span>{weatherData.rain_probability_percent}% Rain</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                <Droplet className="w-4 h-4 text-cyan-400" />
+                <span>{weatherData.expected_rainfall_mm}mm Rain Expected</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                <Wind className="w-4 h-4 text-emerald-400" />
+                <span>{weatherData.wind_speed_kmh} km/h</span>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Main Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Tabs */}
-        <div className="flex border-b border-gray-100">
+      {/* Main Glassmorphic Container */}
+      <div className="bg-emerald-950/40 backdrop-blur-xl rounded-3xl border border-emerald-500/20 shadow-2xl overflow-hidden">
+        {/* Tabs Header */}
+        <div className="flex border-b border-emerald-500/20">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
@@ -270,10 +271,10 @@ export default function FieldDetail() {
                   if (tab.key === 'recommendation') loadRecommendation();
                   if (tab.key === 'history') fetchHistory();
                 }}
-                className={`flex-1 py-4 text-center font-medium transition-all text-sm flex items-center justify-center gap-2 ${
+                className={`flex-1 py-4 text-center font-bold transition-all text-sm flex items-center justify-center gap-2 ${
                   activeTab === tab.key 
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/40' 
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/50'
+                    ? 'text-emerald-300 border-b-2 border-emerald-400 bg-emerald-500/10' 
+                    : 'text-emerald-200/60 hover:text-white hover:bg-emerald-900/30'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -302,8 +303,8 @@ export default function FieldDetail() {
                     <form onSubmit={handleLogMoisture} className="space-y-4">
                       <div>
                         <div className="flex justify-between items-center mb-2">
-                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Soil Moisture Reading (%)</label>
-                          <span className="text-xs text-blue-600 font-medium">1-Click Presets for Demo:</span>
+                          <label className="block text-xs font-bold text-emerald-300 uppercase tracking-wider">Log Soil Moisture (%)</label>
+                          <span className="text-xs text-amber-400 font-bold">1-Click Presets for Demo:</span>
                         </div>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -311,21 +312,21 @@ export default function FieldDetail() {
                           </div>
                           <input 
                             type="number" min="0" max="100" step="0.1" required
-                            className="block w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none text-lg font-semibold text-gray-900"
+                            className="block w-full pl-12 pr-4 py-4 bg-slate-900/90 border border-emerald-500/30 rounded-2xl focus:ring-2 focus:ring-emerald-400 focus:outline-none text-xl font-bold text-white placeholder-gray-500"
                             placeholder="e.g. 45"
                             value={moisture} onChange={e => setMoisture(e.target.value)}
                           />
                         </div>
                         
-                        {/* Quick Presets for Demo Judging */}
-                        <div className="flex gap-2 mt-3">
-                          <button type="button" onClick={() => setMoisture('25')} className="flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg border border-amber-200 transition-colors">
+                        {/* Demo Presets */}
+                        <div className="flex gap-2.5 mt-3">
+                          <button type="button" onClick={() => setMoisture('25')} className="flex-1 py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold rounded-xl border border-amber-500/30 transition-colors">
                             Low (25%)
                           </button>
-                          <button type="button" onClick={() => setMoisture('65')} className="flex-1 py-1.5 px-2 bg-green-50 hover:bg-green-100 text-green-800 text-xs font-semibold rounded-lg border border-green-200 transition-colors">
+                          <button type="button" onClick={() => setMoisture('65')} className="flex-1 py-2 px-3 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl border border-emerald-500/30 transition-colors">
                             Optimal (65%)
                           </button>
-                          <button type="button" onClick={() => setMoisture('15')} className="flex-1 py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-800 text-xs font-semibold rounded-lg border border-red-200 transition-colors">
+                          <button type="button" onClick={() => setMoisture('15')} className="flex-1 py-2 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-bold rounded-xl border border-red-500/30 transition-colors">
                             Critical (15%)
                           </button>
                         </div>
@@ -333,22 +334,20 @@ export default function FieldDetail() {
                       <button 
                         type="submit" 
                         disabled={submitting || !moisture}
-                        className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
-                        {submitting ? 'Saving...' : 'Save & Get Advisory'}
+                        {submitting ? 'Saving Telemetry...' : 'Save & Get Advisory'}
                       </button>
                     </form>
 
-                    {/* Quick info card */}
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex items-start justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Crop Water Threshold</p>
-                        <p className="text-sm text-blue-800">
-                          <strong>{field.crop_type}</strong> ({field.current_growth_stage}) requires moisture &gt;{' '}
-                          <strong>{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).moisture_threshold_percent}%</strong>{' '}
-                          ({(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).water_requirement_mm_per_day}mm/day)
-                        </p>
-                      </div>
+                    {/* Requirement Card */}
+                    <div className="bg-emerald-900/40 rounded-2xl p-4 border border-emerald-500/20 space-y-1">
+                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Agronomic Rule Target</p>
+                      <p className="text-xs text-emerald-200/90 leading-relaxed">
+                        <strong>{field.crop_type}</strong> ({field.current_growth_stage}) requires moisture &gt;{' '}
+                        <strong className="text-white">{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).moisture_threshold_percent}%</strong>{' '}
+                        ({(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).water_requirement_mm_per_day}mm/day)
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -359,36 +358,36 @@ export default function FieldDetail() {
                 <div className="max-w-2xl mx-auto">
                   {!recommendation ? (
                     <div className="text-center py-16 flex flex-col items-center">
-                      <div className="w-12 h-12 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4" />
-                      <p className="text-gray-400 font-medium">Running advisory engine...</p>
-                      <p className="text-xs text-gray-300 mt-1">Analyzing soil + weather + crop data</p>
+                      <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin mb-4" />
+                      <p className="text-emerald-300 font-bold">Running advisory engine...</p>
+                      <p className="text-xs text-emerald-400/60 mt-1">Combining soil moisture + rain predictions + crop stage rules</p>
                     </div>
                   ) : (
                     <motion.div 
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className={`rounded-2xl border-2 overflow-hidden ${
+                      className={`rounded-3xl border-2 overflow-hidden shadow-2xl ${
                         recommendation.recommendation === 'irrigate' 
-                          ? 'border-blue-200' 
-                          : 'border-green-200'
+                          ? 'border-blue-500/40 bg-slate-900/90' 
+                          : 'border-emerald-500/40 bg-slate-900/90'
                       }`}
                     >
-                      {/* Result header */}
+                      {/* Header */}
                       <div className={`p-8 text-center ${
                         recommendation.recommendation === 'irrigate' 
-                          ? 'bg-gradient-to-b from-blue-50 to-blue-25' 
-                          : 'bg-gradient-to-b from-green-50 to-green-25'
+                          ? 'bg-gradient-to-b from-blue-900/40 to-slate-900' 
+                          : 'bg-gradient-to-b from-emerald-900/40 to-slate-900'
                       }`}>
                         <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
-                          recommendation.recommendation === 'irrigate' ? 'bg-blue-100' : 'bg-green-100'
+                          recommendation.recommendation === 'irrigate' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'
                         }`}>
                           {recommendation.recommendation === 'irrigate' 
-                            ? <Droplet className="w-8 h-8 text-blue-600" />
-                            : <CheckCircle className="w-8 h-8 text-green-600" />
+                            ? <Droplet className="w-8 h-8" />
+                            : <CheckCircle className="w-8 h-8" />
                           }
                         </div>
-                        <h2 className={`text-4xl font-black tracking-tight ${
-                          recommendation.recommendation === 'irrigate' ? 'text-blue-700' : 'text-green-700'
+                        <h2 className={`text-4xl sm:text-5xl font-black tracking-tight ${
+                          recommendation.recommendation === 'irrigate' ? 'text-blue-400' : 'text-emerald-400'
                         }`}>
                           {recommendation.recommendation === 'irrigate' 
                             ? `Irrigate: ${recommendation.amount_mm} mm` 
@@ -396,22 +395,22 @@ export default function FieldDetail() {
                         </h2>
                       </div>
 
-                      {/* Reason & Stats */}
-                      <div className="p-6 bg-white">
-                        <p className="text-gray-600 text-sm leading-relaxed mb-6">{recommendation.reason}</p>
+                      {/* Details */}
+                      <div className="p-6 sm:p-8 space-y-6">
+                        <p className="text-emerald-100/90 text-sm leading-relaxed bg-emerald-950/60 p-4 rounded-2xl border border-emerald-500/20">{recommendation.reason}</p>
                         
-                        <div className="grid grid-cols-3 gap-3 mb-6">
-                          <div className="bg-gray-50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-400 font-semibold uppercase">Moisture</p>
-                            <p className="text-lg font-bold text-gray-900">{recommendation.moisture}%</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="bg-slate-950 p-3 rounded-xl border border-emerald-500/10 text-center">
+                            <p className="text-[10px] text-emerald-400 font-bold uppercase">Moisture</p>
+                            <p className="text-lg font-black text-white">{recommendation.moisture}%</p>
                           </div>
-                          <div className="bg-gray-50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-400 font-semibold uppercase">Threshold</p>
-                            <p className="text-lg font-bold text-gray-900">{recommendation.threshold}%</p>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-emerald-500/10 text-center">
+                            <p className="text-[10px] text-emerald-400 font-bold uppercase">Threshold</p>
+                            <p className="text-lg font-black text-white">{recommendation.threshold}%</p>
                           </div>
-                          <div className="bg-gray-50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-400 font-semibold uppercase">Daily Need</p>
-                            <p className="text-lg font-bold text-gray-900">{recommendation.dailyNeed}mm</p>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-emerald-500/10 text-center">
+                            <p className="text-[10px] text-emerald-400 font-bold uppercase">Daily Need</p>
+                            <p className="text-lg font-black text-white">{recommendation.dailyNeed}mm</p>
                           </div>
                         </div>
 
@@ -420,14 +419,14 @@ export default function FieldDetail() {
                           <button 
                             onClick={() => handleLogIrrigation('irrigated')} 
                             disabled={submitting}
-                            className="flex-1 flex justify-center items-center px-5 py-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50"
+                            className="flex-1 flex justify-center items-center px-5 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold shadow-xl transition-all disabled:opacity-50 text-sm"
                           >
                             <CheckCircle className="w-5 h-5 mr-2" /> Mark Irrigated
                           </button>
                           <button 
                             onClick={() => handleLogIrrigation('skipped')} 
                             disabled={submitting}
-                            className="flex-1 flex justify-center items-center px-5 py-3.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold border border-gray-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                            className="flex-1 flex justify-center items-center px-5 py-4 bg-slate-800 text-emerald-200 rounded-2xl font-bold border border-emerald-500/20 hover:bg-slate-700 transition-all text-sm"
                           >
                             <Clock className="w-5 h-5 mr-2" /> Skip
                           </button>
@@ -443,27 +442,27 @@ export default function FieldDetail() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Moisture Readings */}
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
-                      <Droplet className="w-4 h-4 mr-2 text-blue-500" /> Moisture Readings
+                    <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center">
+                      <Droplet className="w-4 h-4 mr-2 text-blue-400" /> Soil Moisture Readings
                     </h3>
                     {history.readings.length === 0 ? (
-                      <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
-                        No readings yet. Log your first soil moisture reading.
+                      <div className="text-center py-10 bg-slate-900/60 rounded-2xl border border-emerald-500/10 text-xs text-emerald-300/60">
+                        No readings logged yet.
                       </div>
                     ) : (
-                      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                        <table className="min-w-full divide-y divide-gray-100">
-                          <thead className="bg-gray-50/80">
+                      <div className="bg-slate-900/80 border border-emerald-500/20 rounded-2xl overflow-hidden">
+                        <table className="min-w-full divide-y divide-emerald-500/10">
+                          <thead className="bg-slate-950">
                             <tr>
-                              <th className="py-3 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Moisture</th>
+                              <th className="py-3 pl-4 pr-3 text-left text-xs font-bold text-emerald-400 uppercase tracking-wider">Date</th>
+                              <th className="px-3 py-3 text-left text-xs font-bold text-emerald-400 uppercase tracking-wider">Moisture</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-50">
+                          <tbody className="divide-y divide-emerald-500/10">
                             {history.readings.slice(0, 10).map(r => (
-                              <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm text-gray-600">{toDate(r.created_at).toLocaleDateString()}</td>
-                                <td className="whitespace-nowrap px-3 py-3 text-sm font-bold text-blue-600">{r.moisture_percent}%</td>
+                              <tr key={r.id} className="hover:bg-emerald-950/40 transition-colors">
+                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-xs text-emerald-200/80">{toDate(r.created_at).toLocaleDateString()}</td>
+                                <td className="whitespace-nowrap px-3 py-3 text-sm font-black text-blue-400">{r.moisture_percent}%</td>
                               </tr>
                             ))}
                           </tbody>
@@ -474,37 +473,37 @@ export default function FieldDetail() {
 
                   {/* Irrigation Logs */}
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
-                      <CheckCircle className="w-4 h-4 mr-2 text-green-500" /> Irrigation Actions
+                    <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2 text-emerald-400" /> Irrigation Actions
                     </h3>
                     {history.logs.length === 0 ? (
-                      <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
+                      <div className="text-center py-10 bg-slate-900/60 rounded-2xl border border-emerald-500/10 text-xs text-emerald-300/60">
                         No irrigation actions logged yet.
                       </div>
                     ) : (
-                      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                        <table className="min-w-full divide-y divide-gray-100">
-                          <thead className="bg-gray-50/80">
+                      <div className="bg-slate-900/80 border border-emerald-500/20 rounded-2xl overflow-hidden">
+                        <table className="min-w-full divide-y divide-emerald-500/10">
+                          <thead className="bg-slate-950">
                             <tr>
-                              <th className="py-3 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
-                              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                              <th className="py-3 pl-4 pr-3 text-left text-xs font-bold text-emerald-400 uppercase tracking-wider">Date</th>
+                              <th className="px-3 py-3 text-left text-xs font-bold text-emerald-400 uppercase tracking-wider">Action</th>
+                              <th className="px-3 py-3 text-left text-xs font-bold text-emerald-400 uppercase tracking-wider">Amount</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-50">
+                          <tbody className="divide-y divide-emerald-500/10">
                             {history.logs.slice(0, 10).map(r => (
-                              <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm text-gray-600">{toDate(r.logged_at).toLocaleDateString()}</td>
-                                <td className="whitespace-nowrap px-3 py-3 text-sm">
-                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                              <tr key={r.id} className="hover:bg-emerald-950/40 transition-colors">
+                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-xs text-emerald-200/80">{toDate(r.logged_at).toLocaleDateString()}</td>
+                                <td className="whitespace-nowrap px-3 py-3 text-xs">
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${
                                     r.action_taken === 'irrigated' 
-                                      ? 'bg-blue-50 text-blue-700 border border-blue-100' 
-                                      : 'bg-gray-50 text-gray-600 border border-gray-100'
+                                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                   }`}>
                                     {r.action_taken === 'irrigated' ? '💧 Irrigated' : '⏭ Skipped'}
                                   </span>
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-3 text-sm font-medium text-gray-700">{r.actual_amount_mm || 0}mm</td>
+                                <td className="whitespace-nowrap px-3 py-3 text-xs font-bold text-white">{r.actual_amount_mm || 0}mm</td>
                               </tr>
                             ))}
                           </tbody>
