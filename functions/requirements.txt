@@ -1,6 +1,0 @@
-firebase-functions>=0.1.0
-firebase-admin>=6.2.0
-flask>=2.2.0
-requests>=2.31.0
-pytest>=7.4.0
-pandas>=2.0.0

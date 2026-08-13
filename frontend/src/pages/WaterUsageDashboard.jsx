@@ -6,7 +6,7 @@ import { auth } from '../firebase';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, Target } from 'lucide-react';
 
-const API_BASE = "http://localhost:5001/demo-project/us-central1";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function WaterUsageDashboard() {
   const { id } = useParams();

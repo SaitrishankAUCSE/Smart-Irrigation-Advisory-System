@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import { doc, getDoc, collection, getDocs, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Droplet, CloudRain, Activity, CheckCircle, Clock } from 'lucide-react';
 
-const API_BASE = "http://localhost:5001/demo-project/us-central1";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function FieldDetail() {
   const { id } = useParams();
