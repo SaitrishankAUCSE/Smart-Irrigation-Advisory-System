@@ -272,6 +272,7 @@ export default function FieldDetail() {
   const handleLogMoisture = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setLastLoggedAction(null);
     try {
       await addMoistureReading(id, {
         moisture_percent: parseFloat(moisture),
@@ -290,6 +291,9 @@ export default function FieldDetail() {
     }
   };
 
+  // Action Outcome Success State
+  const [lastLoggedAction, setLastLoggedAction] = useState(null);
+
   const handleLogIrrigation = async (actionTaken) => {
     setSubmitting(true);
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -304,10 +308,16 @@ export default function FieldDetail() {
         username: currentUser?.name || 'Anonymous'
       });
       logUserAction(currentUser.uid, 'irrigation_action', { field_id: id, action: actionTaken, amount: recommendation.amount_mm });
-      setRecommendation(null);
-      fetchHistory();
+      
+      setLastLoggedAction({
+        action: actionTaken,
+        amount: actionTaken === 'irrigated' ? recommendation.amount_mm : 0,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      await fetchHistory();
     } catch (err) {
       console.error(err);
+      alert("Failed to record action");
     } finally {
       setSubmitting(false);
     }
@@ -496,7 +506,50 @@ export default function FieldDetail() {
               {/* RECOMMENDATION TAB */}
               {activeTab === 'recommendation' && (
                 <div className="max-w-3xl mx-auto space-y-6">
-                  {!recommendation ? (
+                  {lastLoggedAction ? (
+                    <motion.div 
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="bg-white rounded-3xl p-8 border border-emerald-200 shadow-xl text-center space-y-6"
+                    >
+                      <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                        <CheckCircle className="w-10 h-10" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <h2 className="text-2xl font-black text-slate-900">
+                          {lastLoggedAction.action === 'irrigated' ? '💧 Irrigation Action Logged!' : '⏭️ Skip Action Logged!'}
+                        </h2>
+                        <p className="text-sm font-semibold text-slate-600">
+                          {lastLoggedAction.action === 'irrigated' 
+                            ? `Recorded ${lastLoggedAction.amount}mm irrigation at ${lastLoggedAction.timestamp}`
+                            : `Recorded irrigation skip action at ${lastLoggedAction.timestamp}`
+                          }
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 pt-2 max-w-lg mx-auto">
+                        <button 
+                          onClick={() => { setLastLoggedAction(null); setActiveTab('log'); }}
+                          className="flex-1 py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-2xl shadow-md transition-colors text-xs"
+                        >
+                          Log New Soil Reading
+                        </button>
+                        <button 
+                          onClick={() => { setLastLoggedAction(null); setActiveTab('history'); fetchHistory(); }}
+                          className="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl border border-slate-200 transition-colors text-xs"
+                        >
+                          View History Logs
+                        </button>
+                        <Link 
+                          to={`/field/${id}/analytics`}
+                          className="flex-1 py-3.5 px-4 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded-2xl border border-blue-200 text-center transition-colors text-xs flex items-center justify-center"
+                        >
+                          Water Analytics
+                        </Link>
+                      </div>
+                    </motion.div>
+                  ) : !recommendation ? (
                     <div className="text-center py-16 flex flex-col items-center">
                       <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4" />
                       <p className="text-emerald-900 font-black">Executing High-Precision FAO-56 Advisory Engine...</p>
