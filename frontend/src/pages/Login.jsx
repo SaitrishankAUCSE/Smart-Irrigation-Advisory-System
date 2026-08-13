@@ -13,11 +13,26 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      // HACKATHON DEMO BYPASS: Always log in as the demo farmer regardless of what is typed!
-      await signInWithEmailAndPassword(auth, 'demo.farmer@example.com', 'password123');
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (signInErr) {
+        // HACKATHON DEMO BYPASS: If account doesn't exist, instantly create it!
+        const { createUserWithEmailAndPassword } = await import('firebase/auth');
+        const { doc, setDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          email: email,
+          name: email.split('@')[0],
+          role: 'farmer',
+          createdAt: new Date()
+        });
+      }
       navigate('/');
     } catch (err) {
-      setError('Failed to sign in. Please check your credentials.');
+      console.error(err);
+      setError('Failed to sign in. Please use a password with at least 6 characters.');
     }
   };
 
