@@ -51,7 +51,7 @@ export default function WaterUsageDashboard() {
   if (!currentUser) return null;
   if (loading) return (
     <div className="flex items-center justify-center py-32">
-      <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
+      <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
     </div>
   );
 
@@ -64,17 +64,17 @@ export default function WaterUsageDashboard() {
     >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Link to={`/field/${id}`} className="w-11 h-11 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl flex items-center justify-center hover:bg-emerald-900/60 transition-colors shadow-md text-emerald-300">
+          <Link to={`/field/${id}`} className="w-11 h-11 bg-white border border-emerald-200 rounded-2xl flex items-center justify-center hover:bg-emerald-50 transition-colors shadow-sm text-emerald-700">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">Water Telemetry & Analytics</h1>
-            <p className="text-sm text-emerald-200/80">Irrigation volume trends and recommendation adherence score</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Water Telemetry & Analytics</h1>
+            <p className="text-sm text-slate-500 font-semibold">Irrigation volume trends and recommendation adherence score</p>
           </div>
         </div>
         <button 
           onClick={() => window.print()}
-          className="px-5 py-3 bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 rounded-2xl hover:bg-emerald-900/60 flex items-center shadow-md transition-all font-bold text-sm"
+          className="px-5 py-3 bg-white border border-emerald-200 text-emerald-800 rounded-2xl hover:bg-emerald-50 flex items-center shadow-sm transition-all font-black text-sm"
         >
           <Printer className="w-4 h-4 mr-2" />
           Export Report
@@ -83,25 +83,25 @@ export default function WaterUsageDashboard() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-emerald-950/40 backdrop-blur-xl rounded-2xl border border-emerald-500/20 p-5 shadow-lg">
-          <div className="flex items-center text-xs font-bold text-emerald-400/80 uppercase tracking-wider mb-1">
-            <Droplet className="w-4 h-4 mr-1.5 text-blue-400" /> Total Water Applied
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
+          <div className="flex items-center text-xs font-extrabold text-blue-800 uppercase tracking-wider mb-1">
+            <Droplet className="w-4 h-4 mr-1.5 text-blue-600" /> Total Water Applied
           </div>
-          <p className="text-3xl font-black text-white">{totalWater} <span className="text-sm font-semibold text-emerald-300">mm</span></p>
+          <p className="text-3xl font-black text-slate-900">{totalWater} <span className="text-sm font-bold text-slate-500">mm</span></p>
         </div>
 
-        <div className="bg-emerald-950/40 backdrop-blur-xl rounded-2xl border border-emerald-500/20 p-5 shadow-lg">
-          <div className="flex items-center text-xs font-bold text-emerald-400/80 uppercase tracking-wider mb-1">
-            <Award className="w-4 h-4 mr-1.5 text-amber-400" /> Advisory Adherence Rate
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
+          <div className="flex items-center text-xs font-extrabold text-amber-800 uppercase tracking-wider mb-1">
+            <Award className="w-4 h-4 mr-1.5 text-amber-600" /> Advisory Adherence Rate
           </div>
-          <p className="text-3xl font-black text-white">{adherence}%</p>
+          <p className="text-3xl font-black text-slate-900">{adherence}%</p>
         </div>
 
-        <div className="bg-emerald-950/40 backdrop-blur-xl rounded-2xl border border-emerald-500/20 p-5 shadow-lg">
-          <div className="flex items-center text-xs font-bold text-emerald-400/80 uppercase tracking-wider mb-1">
-            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-400" /> Conservation Rating
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
+          <div className="flex items-center text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1">
+            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-600" /> Conservation Rating
           </div>
-          <p className="text-xl font-black text-emerald-300 mt-1">
+          <p className="text-xl font-black text-emerald-700 mt-1">
             {adherence >= 80 ? '🌟 Grade A+ Efficient' : '👍 Good Efficiency'}
           </p>
         </div>
@@ -110,25 +110,25 @@ export default function WaterUsageDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart */}
         <div className="lg:col-span-2">
-          <div className="bg-emerald-950/40 backdrop-blur-xl p-6 rounded-3xl shadow-2xl border border-emerald-500/20 h-full">
-            <h2 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-4 flex items-center">
-              <TrendingUp className="w-4 h-4 mr-2 text-blue-400" />
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-emerald-100 h-full">
+            <h2 className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-4 flex items-center">
+              <TrendingUp className="w-4 h-4 mr-2 text-blue-600" />
               Daily Water Usage Trend (mm)
             </h2>
             <div className="h-72 w-full">
               {usageData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={usageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(16, 185, 129, 0.1)" />
-                    <XAxis dataKey="date" tick={{fontSize: 11, fill: '#6EE7B7'}} axisLine={false} tickLine={false} />
-                    <YAxis tick={{fontSize: 11, fill: '#6EE7B7'}} axisLine={false} tickLine={false} />
-                    <RechartsTooltip cursor={{fill: 'rgba(16, 185, 129, 0.05)'}} contentStyle={{backgroundColor: '#064E3B', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#fff', fontSize: '12px'}} />
-                    <Bar dataKey="actual_amount_mm" fill="#3B82F6" radius={[8, 8, 0, 0]} name="Water (mm)" barSize={32} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="date" tick={{fontSize: 11, fill: '#64748B'}} axisLine={false} tickLine={false} />
+                    <YAxis tick={{fontSize: 11, fill: '#64748B'}} axisLine={false} tickLine={false} />
+                    <RechartsTooltip cursor={{fill: '#F1F5F9'}} contentStyle={{backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #CBD5E1', color: '#0F172A', fontSize: '12px'}} />
+                    <Bar dataKey="actual_amount_mm" fill="#2563EB" radius={[8, 8, 0, 0]} name="Water (mm)" barSize={32} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-emerald-200/50 bg-slate-950/40 rounded-2xl border border-dashed border-emerald-500/20 text-sm">
-                  <Droplet className="w-5 h-5 mr-2 text-blue-400" /> No irrigation action records available yet
+                <div className="h-full flex items-center justify-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-sm font-medium">
+                  <Droplet className="w-5 h-5 mr-2 text-blue-500" /> No irrigation action records available yet
                 </div>
               )}
             </div>
@@ -137,19 +137,19 @@ export default function WaterUsageDashboard() {
 
         {/* Adherence Ring */}
         <div className="lg:col-span-1">
-          <div className="bg-emerald-950/40 backdrop-blur-xl p-6 rounded-3xl shadow-2xl border border-emerald-500/20 flex flex-col items-center text-center justify-center h-full min-h-[320px]">
-            <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl border border-emerald-500/30 flex items-center justify-center mb-4 text-emerald-400">
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-emerald-100 flex flex-col items-center text-center justify-center h-full min-h-[320px]">
+            <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4 text-emerald-700 shadow-inner">
               <Target className="w-8 h-8" />
             </div>
-            <h2 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Adherence Score</h2>
-            <p className="text-emerald-200/60 text-xs mb-6 max-w-xs">Measures how often irrigation decisions match AI recommendations.</p>
+            <h2 className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1">Adherence Score</h2>
+            <p className="text-slate-500 text-xs mb-6 max-w-xs font-medium">Measures how often irrigation decisions match AI recommendations.</p>
             
             <div className="relative">
               <svg className="w-36 h-36 transform -rotate-90">
-                <circle cx="72" cy="72" r="62" stroke="rgba(16, 185, 129, 0.15)" strokeWidth="10" fill="none" />
+                <circle cx="72" cy="72" r="62" stroke="#E2E8F0" strokeWidth="10" fill="none" />
                 <motion.circle 
                   cx="72" cy="72" r="62" 
-                  stroke="#10B981" 
+                  stroke="#059669" 
                   strokeWidth="10" 
                   fill="none" 
                   strokeDasharray={`${2 * Math.PI * 62}`}
@@ -160,7 +160,7 @@ export default function WaterUsageDashboard() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-4xl font-black text-white">{adherence !== null ? adherence : '--'}%</span>
+                <span className="text-4xl font-black text-slate-900">{adherence !== null ? adherence : '--'}%</span>
               </div>
             </div>
           </div>
