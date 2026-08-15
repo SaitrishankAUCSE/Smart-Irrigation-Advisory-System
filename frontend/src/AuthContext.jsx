@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -9,39 +11,42 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const name = localStorage.getItem('agrisense_username');
-    if (name) {
-      const name_slug = name.toLowerCase().trim().replace(/\s+/g, '_');
-      setCurrentUser({
-        uid: 'farmer_' + name_slug,
-        name: name,
-      });
-    }
-    setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || user.email.split('@')[0],
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
   }, []);
 
-  const login = (name) => {
-    const trimmed = name.trim() || 'Demo Farmer';
-    localStorage.setItem('agrisense_username', trimmed);
-    const name_slug = trimmed.toLowerCase().replace(/\s+/g, '_');
-    setCurrentUser({
-      uid: 'farmer_' + name_slug,
-      name: trimmed,
-    });
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Failed to sign out", err);
+    }
   };
 
   const value = {
     currentUser,
     role: 'farmer',
     loading,
-    login
+    logout
   };
 
   return (
     <AuthContext.Provider value={value}>
       {loading ? (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 text-emerald-700 font-semibold">
-          Loading farmer profile...
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--proof)', color: 'var(--sheet)', fontFamily: "'DM Mono', monospace" }}>
+          Authenticating...
         </div>
       ) : (
         children
