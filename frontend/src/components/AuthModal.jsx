@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { auth, googleProvider, db } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { doc, setDoc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  signOut 
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, addDoc, collection } from 'firebase/firestore';
 import { X, AlertCircle } from 'lucide-react';
 
 export default function AuthModal({ onClose }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mode, setMode] = useState('signup');
+  const [mode, setMode] = useState('signup'); // 'signup' | 'login'
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,10 +34,12 @@ export default function AuthModal({ onClose }) {
       return 'This sign-in provider is not enabled in Firebase Console (Authentication > Sign-in method).';
     }
     if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || msg.includes('invalid-credential') || msg.includes('user-not-found')) {
-      return 'Invalid email or password.';
+      return mode === 'login' 
+        ? 'No registered account found with these credentials. Please sign up first.' 
+        : 'Invalid credentials. Please check and try again.';
     }
     if (code === 'auth/wrong-password' || msg.includes('wrong-password')) {
-      return 'Incorrect password.';
+      return 'Incorrect password. Please try again.';
     }
     if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) {
       return 'An account with this email already exists. Please switch to Log In.';
@@ -50,7 +57,7 @@ export default function AuthModal({ onClose }) {
     return code ? `[${code}] ${msg}` : msg || 'Authentication failed. Please try again.';
   };
 
-  const recordUserInFirestore = async (user, actionType, provider) => {
+  const recordUserInFirestore = async (user, actionType, provider, isSignup) => {
     try {
       const userRef = doc(db, 'users', user.uid);
       const snap = await getDoc(userRef);
@@ -66,13 +73,13 @@ export default function AuthModal({ onClose }) {
         role: 'farmer'
       };
 
-      if (!snap.exists()) {
-        profileData.created_at = user.metadata?.creationTime || new Date().toISOString();
+      if (!snap.exists() || isSignup) {
+        profileData.created_at = snap.exists() ? (snap.data().created_at || new Date().toISOString()) : new Date().toISOString();
       }
 
       await setDoc(userRef, profileData, { merge: true });
 
-      // Record audit log in user_actions
+      // Record audit log
       await addDoc(collection(db, 'user_actions'), {
         user_id: user.uid,
         action: actionType,
@@ -95,13 +102,28 @@ export default function AuthModal({ onClose }) {
 
     try {
       if (mode === 'signup') {
+        // Explicit registration
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await recordUserInFirestore(cred.user, 'signup_email', 'password');
+        await recordUserInFirestore(cred.user, 'signup_email', 'password', true);
+        onClose();
       } else {
+        // Explicit login: Must verify account exists
         const cred = await signInWithEmailAndPassword(auth, email, password);
-        await recordUserInFirestore(cred.user, 'login_email', 'password');
+        
+        // Verify user profile exists in Firestore database
+        const userRef = doc(db, 'users', cred.user.uid);
+        const snap = await getDoc(userRef);
+        
+        if (!snap.exists()) {
+          // Unregistered user attempting to login
+          await signOut(auth);
+          setError('No registered account found with this email. Please sign up first.');
+          return;
+        }
+
+        await recordUserInFirestore(cred.user, 'login_email', 'password', false);
+        onClose();
       }
-      onClose();
     } catch (err) {
       console.error('Submit error:', err);
       setError(formatError(err));
@@ -115,8 +137,24 @@ export default function AuthModal({ onClose }) {
     setLoading(true);
     try {
       const cred = await signInWithPopup(auth, googleProvider);
-      await recordUserInFirestore(cred.user, 'login_google', 'google.com');
-      onClose();
+      const userRef = doc(db, 'users', cred.user.uid);
+      const snap = await getDoc(userRef);
+
+      if (mode === 'login') {
+        // In login mode, ONLY allow users who have previously signed up
+        if (!snap.exists()) {
+          await signOut(auth);
+          setError('No registered account found with this Google account. Please switch to "Sign up" first to register.');
+          return;
+        }
+
+        await recordUserInFirestore(cred.user, 'login_google', 'google.com', false);
+        onClose();
+      } else {
+        // In signup mode, register new account
+        await recordUserInFirestore(cred.user, 'signup_google', 'google.com', true);
+        onClose();
+      }
     } catch (err) {
       console.error('Google sign-in error:', err);
       setError(formatError(err));
@@ -177,7 +215,7 @@ export default function AuthModal({ onClose }) {
           <p style={{ color: 'var(--graphite)', fontSize: '0.85rem', margin: 0, lineHeight: 1.4 }}>
             {mode === 'signup' 
               ? 'Create a secure account to access your dashboard.'
-              : 'Sign in to access your dashboard.'}
+              : 'Log in to your registered account.'}
           </p>
         </div>
 

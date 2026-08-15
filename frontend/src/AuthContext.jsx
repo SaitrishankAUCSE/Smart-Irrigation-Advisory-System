@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -11,29 +11,18 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sync user profile and log in time to Firestore
+  // Sync user last login if registered in Firestore
   const syncUserToFirestore = async (user) => {
     if (!user) return;
     try {
       const userRef = doc(db, 'users', user.uid);
       const snap = await getDoc(userRef);
-      
-      const userData = {
-        uid: user.uid,
-        email: user.email || '',
-        name: user.displayName || user.email?.split('@')[0] || 'Farmer',
-        photo_url: user.photoURL || null,
-        email_verified: user.emailVerified || false,
-        auth_provider: user.providerData?.[0]?.providerId || 'password',
-        last_login_at: new Date().toISOString(),
-        role: 'farmer'
-      };
-
-      if (!snap.exists()) {
-        userData.created_at = user.metadata?.creationTime || new Date().toISOString();
+      if (snap.exists()) {
+        await setDoc(userRef, {
+          last_login_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString()
+        }, { merge: true });
       }
-
-      await setDoc(userRef, userData, { merge: true });
     } catch (err) {
       console.warn('Firestore user profile sync (non-fatal):', err);
     }
