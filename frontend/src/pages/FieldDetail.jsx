@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getField, getMoistureReadings, getIrrigationLogs, addMoistureReading, addIrrigationLog, logUserAction, toDate } from '../services/dataService';
 import { Droplet, CloudRain, Activity, CheckCircle, Clock, ArrowLeft, BarChart3, Thermometer, Wind, AlertTriangle, Sparkles, Layers, Volume2, VolumeX, Languages, Timer, Gauge, HelpCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import SoilVisualizer from '../components/SoilVisualizer';
+import { useReveal } from '../hooks/useReveal';
 
 const CROP_RULES = {
   "Rice": {
@@ -72,6 +72,11 @@ export default function FieldDetail() {
   // Multi-Language & AI Voice State
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Action Outcome Success State
+  const [lastLoggedAction, setLastLoggedAction] = useState(null);
+  
+  useReveal();
 
   const fetchField = async () => {
     try {
@@ -114,10 +119,8 @@ export default function FieldDetail() {
     }
   }, [id, currentUser]);
 
-  // Clean up speech synthesis when component unmounts and preload voices
   useEffect(() => {
     if ('speechSynthesis' in window) {
-      // Trigger voice loading
       window.speechSynthesis.getVoices();
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.getVoices();
@@ -149,7 +152,6 @@ export default function FieldDetail() {
     const dailyBaseNeed = rule.water_requirement_mm_per_day;
     const kc = rule.kc || 1.0;
 
-    // High Precision FAO-56 Evapotranspiration Calculations
     const effectiveRainMm = rainProb >= 60 ? Math.round((expRain * 0.8) * 10) / 10 : 0.0;
     const tempFactor = 1.0 + Math.max(0.0, (tempC - 25.0) / 50.0);
     const etcMm = Math.round((dailyBaseNeed * kc * tempFactor) * 10) / 10;
@@ -237,7 +239,6 @@ export default function FieldDetail() {
     setTimeout(() => setRecommendation(result), 500);
   };
 
-  // AI Voice Speaker Handler
   const handleSpeakAdvisory = () => {
     if (!recommendation) return;
 
@@ -268,20 +269,14 @@ export default function FieldDetail() {
     const targetLang = langMap[selectedLanguage] || 'en-US';
     const utterance = new SpeechSynthesisUtterance(textToRead);
     utterance.lang = targetLang;
-    utterance.rate = 0.90; // Slightly slower for clearer regional pronunciation
+    utterance.rate = 0.90; 
 
-    // Force browser to pick a specific voice for the selected language
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
-      // 1. Try exact lang match (e.g. 'te-IN')
       let preferredVoice = voices.find(v => v.lang === targetLang);
-      
-      // 2. Try prefix match (e.g. 'te')
       if (!preferredVoice) {
         preferredVoice = voices.find(v => v.lang.startsWith(selectedLanguage));
       }
-      
-      // 3. Set voice if found
       if (preferredVoice) {
         utterance.voice = preferredVoice;
       }
@@ -316,9 +311,6 @@ export default function FieldDetail() {
     }
   };
 
-  // Action Outcome Success State
-  const [lastLoggedAction, setLastLoggedAction] = useState(null);
-
   const handleLogIrrigation = async (actionTaken) => {
     setSubmitting(true);
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -350,18 +342,18 @@ export default function FieldDetail() {
 
   if (!currentUser) return null;
   if (loading) return (
-    <div className="flex items-center justify-center py-32">
+    <div className="flex items-center justify-center py-32 bg-[#0D0D0C] text-[#EAE8E1] min-h-screen">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
-        <p className="text-emerald-800 text-sm font-bold">Fetching plot telemetry...</p>
+        <div className="w-12 h-12 border-4 border-[#2D7A4F] border-t-[#3DA667] rounded-full animate-spin" />
+        <p className="text-[#8A877E] text-sm font-[Instrument_Sans]">Fetching plot telemetry...</p>
       </div>
     </div>
   );
   if (!field) return (
-    <div className="text-center py-20 bg-white rounded-3xl border border-emerald-200 shadow-sm">
-      <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-      <h2 className="text-xl font-bold text-slate-900">Field Plot Not Found</h2>
-      <Link to="/" className="mt-4 inline-block text-emerald-700 hover:underline font-bold text-sm">← Back to Dashboard</Link>
+    <div className="text-center py-20 bg-[#0D0D0C] text-[#EAE8E1] min-h-screen">
+      <AlertTriangle className="w-12 h-12 text-[#2D7A4F] mx-auto mb-4" />
+      <h2 className="text-xl font-[Instrument_Serif] mb-4">Field Plot Not Found</h2>
+      <Link to="/" className="text-[#8A877E] hover:text-[#EAE8E1] font-[Instrument_Sans] text-sm underline decoration-[#2D7A4F] transition-colors">← Back to Dashboard</Link>
     </div>
   );
 
@@ -372,439 +364,368 @@ export default function FieldDetail() {
   ];
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      transition={{ duration: 0.3 }}
-      className="max-w-6xl mx-auto space-y-6"
-    >
-      {/* Top Header Navigation */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="w-11 h-11 bg-white border border-emerald-200 rounded-2xl flex items-center justify-center hover:bg-emerald-50 transition-colors shadow-sm text-emerald-700">
-            <ArrowLeft className="w-5 h-5" />
+    <div className="wrap bg-[#0D0D0C] text-[#EAE8E1] min-h-screen font-[Instrument_Sans] pt-8 pb-16 reveal">
+      <div className="max-w-6xl mx-auto space-y-8 px-4 sm:px-6">
+        {/* Top Header Navigation */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <Link to="/" className="text-[#8A877E] hover:text-[#EAE8E1] transition-colors text-sm flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </Link>
+            <div>
+              <h1 className="head text-4xl sm:text-5xl font-[Instrument_Serif] text-[#EAE8E1] mb-2">{field.name}</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-bold text-[#EAE8E1] border border-[#2D7A4F] px-2 py-1 uppercase tracking-widest bg-[#2D7A4F]/10">
+                  {field.crop_type}
+                </span>
+                <span className="text-[#8A877E]">•</span>
+                <span className="text-sm text-[#8A877E] uppercase tracking-wider">{field.current_growth_stage}</span>
+                <span className="text-[#8A877E]">•</span>
+                <span className="text-sm font-[DM_Mono] text-[#8A877E]">{field.area_acres} ac</span>
+              </div>
+            </div>
+          </div>
+          <Link to={`/field/${id}/analytics`} className="btn-accent flex items-center text-sm uppercase tracking-widest px-4 py-3">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Analytics
           </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{field.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                {field.crop_type}
+        </div>
+
+        {/* Weather Telemetry Strip */}
+        {weatherData && (
+          <div className="border border-[#2D7A4F]/30 p-5 rounded-none bg-[#0D0D0C] shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-[DM_Mono]">
+              <span className="text-[#8A877E] uppercase tracking-widest flex items-center">
+                <Sparkles className="w-3.5 h-3.5 mr-2 text-[#4EC97A]" /> FAO-56 Telemetry
               </span>
-              <span className="text-slate-300">•</span>
-              <span className="text-sm text-slate-600 font-semibold">{field.current_growth_stage} stage</span>
-              <span className="text-slate-300">•</span>
-              <span className="text-sm text-slate-600 font-semibold">{field.area_acres} acres</span>
-            </div>
-          </div>
-        </div>
-        <Link to={`/field/${id}/analytics`} className="px-5 py-3 bg-emerald-700 text-white rounded-2xl hover:bg-emerald-800 flex items-center shadow-lg transition-all font-black text-sm">
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Water Analytics
-        </Link>
-      </div>
-
-      {/* Weather Telemetry Strip */}
-      {weatherData && (
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
-            <span className="font-extrabold text-emerald-800 uppercase tracking-widest flex items-center">
-              <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-500" /> FAO-56 Micro-Climate Weather Telemetry
-            </span>
-            <div className="flex items-center gap-6 font-bold">
-              <div className="flex items-center gap-1.5 text-amber-800">
-                <Thermometer className="w-4 h-4 text-amber-600" />
-                <span>{weatherData.temperature_c}°C</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-blue-800">
-                <CloudRain className="w-4 h-4 text-blue-600" />
-                <span>{weatherData.rain_probability_percent}% Rain</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-teal-800">
-                <Droplet className="w-4 h-4 text-teal-600" />
-                <span>{weatherData.expected_rainfall_mm}mm Expected</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-slate-700">
-                <Wind className="w-4 h-4 text-slate-500" />
-                <span>{weatherData.wind_speed_kmh} km/h</span>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8A877E]">TMP:</span>
+                  <span className="text-[#EAE8E1]">{weatherData.temperature_c}°C</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8A877E]">PRP:</span>
+                  <span className="text-[#EAE8E1]">{weatherData.rain_probability_percent}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8A877E]">EXP:</span>
+                  <span className="text-[#EAE8E1]">{weatherData.expected_rainfall_mm}mm</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8A877E]">WND:</span>
+                  <span className="text-[#EAE8E1]">{weatherData.wind_speed_kmh} km/h</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Container */}
-      <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-emerald-100 shadow-xl overflow-hidden">
-        {/* Tabs Header */}
-        <div className="flex border-b border-emerald-100">
-          {tabs.map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => { 
-                  setActiveTab(tab.key); 
-                  if (tab.key === 'recommendation') loadRecommendation();
-                  if (tab.key === 'history') fetchHistory();
-                }}
-                className={`flex-1 py-4 text-center font-black transition-all text-sm flex items-center justify-center gap-2 ${
-                  activeTab === tab.key 
-                    ? 'text-emerald-800 border-b-2 border-emerald-600 bg-emerald-50/60' 
-                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* Main Container */}
+        <div className="border border-[#8A877E]/20 bg-[#0D0D0C]">
+          {/* Tabs Header */}
+          <div className="flex border-b border-[#8A877E]/20 overflow-x-auto hide-scrollbar">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => { 
+                    setActiveTab(tab.key); 
+                    if (tab.key === 'recommendation') loadRecommendation();
+                    if (tab.key === 'history') fetchHistory();
+                  }}
+                  className={`flex-1 min-w-[150px] py-4 text-center text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                    activeTab === tab.key 
+                      ? 'text-[#EAE8E1] border-b-2 border-[#2D7A4F] bg-[#2D7A4F]/5' 
+                      : 'text-[#8A877E] hover:text-[#EAE8E1] border-b-2 border-transparent'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Tab Content */}
-        <div className="p-6 sm:p-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* LOG TAB */}
-              {activeTab === 'log' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                  <SoilVisualizer moisturePercent={history.readings.length > 0 ? history.readings[0].moisture_percent : 0} />
-                  
-                  <div className="space-y-6">
-                    <form onSubmit={handleLogMoisture} className="space-y-4">
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider">Log Soil Moisture (%)</label>
-                          <span className="text-xs text-amber-700 font-extrabold">1-Click Presets for Demo:</span>
-                        </div>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Droplet className="h-5 w-5 text-blue-500" />
-                          </div>
-                          <input 
-                            type="number" min="0" max="100" step="0.1" required
-                            className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xl font-black text-slate-900 placeholder-slate-400"
-                            placeholder="e.g. 45"
-                            value={moisture} onChange={e => setMoisture(e.target.value)}
-                          />
-                        </div>
-                        
-                        {/* Demo Presets */}
-                        <div className="flex gap-2.5 mt-3">
-                          <button type="button" onClick={() => setMoisture('25')} className="flex-1 py-2 px-3 bg-amber-100/80 hover:bg-amber-200/80 text-amber-900 text-xs font-black rounded-xl border border-amber-300 transition-colors">
-                            Low (25%)
-                          </button>
-                          <button type="button" onClick={() => setMoisture('65')} className="flex-1 py-2 px-3 bg-emerald-100/80 hover:bg-emerald-200/80 text-emerald-900 text-xs font-black rounded-xl border border-emerald-300 transition-colors">
-                            Optimal (65%)
-                          </button>
-                          <button type="button" onClick={() => setMoisture('15')} className="flex-1 py-2 px-3 bg-red-100/80 hover:bg-red-200/80 text-red-900 text-xs font-black rounded-xl border border-red-300 transition-colors">
-                            Critical (15%)
-                          </button>
-                        </div>
+          {/* Tab Content */}
+          <div className="p-6 sm:p-10 reveal" key={activeTab}>
+            {/* LOG TAB */}
+            {activeTab === 'log' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
+                <SoilVisualizer moisturePercent={history.readings.length > 0 ? history.readings[0].moisture_percent : 0} />
+                
+                <div className="space-y-8">
+                  <form onSubmit={handleLogMoisture} className="space-y-6">
+                    <div>
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="block text-xs font-bold text-[#8A877E] uppercase tracking-wider">Log Soil Moisture (%)</label>
+                        <span className="text-[10px] text-[#4EC97A] uppercase tracking-widest">Presets:</span>
                       </div>
-                      <button 
-                        type="submit" 
-                        disabled={submitting || !moisture}
-                        className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-2xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                      >
-                        {submitting ? 'Saving Telemetry...' : 'Save & Get Advisory'}
-                      </button>
-                    </form>
-
-                    {/* Scientific Target Card */}
-                    <div className="bg-emerald-50/80 rounded-2xl p-4 border border-emerald-200/80 space-y-1">
-                      <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider">FAO-56 Agronomic Model Target</p>
-                      <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                        <strong>{field.crop_type}</strong> ({field.current_growth_stage}) requires threshold moisture &gt;{' '}
-                        <strong className="text-emerald-900 font-extrabold">{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).moisture_threshold_percent}%</strong>{' '}
-                        (Crop Kc: {(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).kc})
-                      </p>
+                      <div className="relative">
+                        <input 
+                          type="number" min="0" max="100" step="0.1" required
+                          className="input-dark w-full pl-4 pr-4 py-4 bg-transparent border border-[#8A877E]/30 focus:border-[#2D7A4F] text-2xl font-[DM_Mono] text-[#EAE8E1] placeholder-[#8A877E]/50 focus:outline-none transition-colors"
+                          placeholder="e.g. 45"
+                          value={moisture} onChange={e => setMoisture(e.target.value)}
+                        />
+                      </div>
+                      
+                      {/* Demo Presets */}
+                      <div className="flex gap-3 mt-4">
+                        <button type="button" onClick={() => setMoisture('25')} className="btn-ghost flex-1 py-2 px-3 border border-[#8A877E]/30 hover:border-[#EAE8E1] text-[#8A877E] hover:text-[#EAE8E1] text-xs uppercase tracking-widest transition-colors font-[DM_Mono]">
+                          Low (25)
+                        </button>
+                        <button type="button" onClick={() => setMoisture('65')} className="btn-ghost flex-1 py-2 px-3 border border-[#8A877E]/30 hover:border-[#EAE8E1] text-[#8A877E] hover:text-[#EAE8E1] text-xs uppercase tracking-widest transition-colors font-[DM_Mono]">
+                          Opt (65)
+                        </button>
+                        <button type="button" onClick={() => setMoisture('15')} className="btn-ghost flex-1 py-2 px-3 border border-[#8A877E]/30 hover:border-[#EAE8E1] text-[#8A877E] hover:text-[#EAE8E1] text-xs uppercase tracking-widest transition-colors font-[DM_Mono]">
+                          Crit (15)
+                        </button>
+                      </div>
                     </div>
+                    <button 
+                      type="submit" 
+                      disabled={submitting || !moisture}
+                      className="btn-accent w-full py-4 text-sm uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {submitting ? 'Saving...' : 'Save & Get Advisory'}
+                    </button>
+                  </form>
+
+                  {/* Scientific Target Card */}
+                  <div className="border border-[#2D7A4F]/30 bg-[#2D7A4F]/5 p-5">
+                    <p className="text-xs text-[#2D7A4F] uppercase tracking-widest mb-2 font-bold">Agronomic Target</p>
+                    <p className="text-sm text-[#8A877E] leading-relaxed">
+                      <strong className="text-[#EAE8E1]">{field.crop_type}</strong> ({field.current_growth_stage}) requires threshold moisture &gt;{' '}
+                      <strong className="text-[#4EC97A] font-[DM_Mono]">{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).moisture_threshold_percent}%</strong>{' '}
+                      (Kc: <span className="font-[DM_Mono]">{(CROP_RULES[field.crop_type]?.[field.current_growth_stage] || DEFAULT_RULE).kc}</span>)
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* RECOMMENDATION TAB */}
-              {activeTab === 'recommendation' && (
-                <div className="max-w-3xl mx-auto space-y-6">
-                  {lastLoggedAction ? (
-                    <motion.div 
-                      initial={{ scale: 0.95, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="bg-white rounded-3xl p-8 border border-emerald-200 shadow-xl text-center space-y-6"
-                    >
-                      <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-                        <CheckCircle className="w-10 h-10" />
+            {/* RECOMMENDATION TAB */}
+            {activeTab === 'recommendation' && (
+              <div className="max-w-4xl mx-auto space-y-8">
+                {lastLoggedAction ? (
+                  <div className="border border-[#2D7A4F] p-10 text-center space-y-6 bg-[#0D0D0C]">
+                    <div className="inline-flex justify-center items-center text-[#4EC97A] mb-2">
+                      <CheckCircle className="w-12 h-12" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-[Instrument_Serif] text-[#EAE8E1] mb-2">
+                        {lastLoggedAction.action === 'irrigated' ? 'Irrigation Action Logged' : 'Skip Action Logged'}
+                      </h2>
+                      <p className="text-[#8A877E] font-[DM_Mono] text-sm">
+                        {lastLoggedAction.action === 'irrigated' 
+                          ? `Recorded ${lastLoggedAction.amount}mm irrigation at ${lastLoggedAction.timestamp}`
+                          : `Recorded skip at ${lastLoggedAction.timestamp}`
+                        }
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                      <button 
+                        onClick={() => { setLastLoggedAction(null); setActiveTab('log'); }}
+                        className="btn-accent px-6 py-3 text-xs uppercase tracking-widest"
+                      >
+                        Log New
+                      </button>
+                      <button 
+                        onClick={() => { setLastLoggedAction(null); setActiveTab('history'); fetchHistory(); }}
+                        className="btn-ghost px-6 py-3 text-xs uppercase tracking-widest border border-[#8A877E]/50 text-[#8A877E] hover:text-[#EAE8E1]"
+                      >
+                        History
+                      </button>
+                    </div>
+                  </div>
+                ) : !recommendation ? (
+                  <div className="text-center py-20">
+                    <div className="w-8 h-8 border-2 border-[#8A877E]/30 border-t-[#2D7A4F] rounded-full animate-spin mx-auto mb-6" />
+                    <p className="text-[#EAE8E1] uppercase tracking-widest text-sm mb-2">Executing Engine</p>
+                    <p className="text-xs text-[#8A877E]">Calculating evapotranspiration loss...</p>
+                  </div>
+                ) : (
+                  <div className="border border-[#8A877E]/30 bg-[#0D0D0C]">
+                    {/* Result Header */}
+                    <div className="p-10 text-center border-b border-[#8A877E]/30">
+                      <div className="inline-block border border-[#8A877E]/30 px-3 py-1 text-[10px] uppercase tracking-widest text-[#8A877E] mb-6">
+                        Urgency: <span className={recommendation.urgency === 'Critical' ? 'text-red-400' : 'text-[#4EC97A]'}>{recommendation.urgency}</span>
                       </div>
+                      <h2 className={`text-5xl sm:text-6xl font-[Instrument_Serif] ${
+                        recommendation.recommendation === 'irrigate' ? 'text-[#EAE8E1]' : 'text-[#8A877E]'
+                      }`}>
+                        {recommendation.recommendation === 'irrigate' 
+                          ? `Irrigate: ${recommendation.amount_mm} mm` 
+                          : 'No Irrigation'}
+                      </h2>
+                    </div>
 
-                      <div className="space-y-2">
-                        <h2 className="text-2xl font-black text-slate-900">
-                          {lastLoggedAction.action === 'irrigated' ? '💧 Irrigation Action Logged!' : '⏭️ Skip Action Logged!'}
-                        </h2>
-                        <p className="text-sm font-semibold text-slate-600">
-                          {lastLoggedAction.action === 'irrigated' 
-                            ? `Recorded ${lastLoggedAction.amount}mm irrigation at ${lastLoggedAction.timestamp}`
-                            : `Recorded irrigation skip action at ${lastLoggedAction.timestamp}`
-                          }
+                    {/* Language & Voice */}
+                    <div className="px-8 py-5 border-b border-[#8A877E]/30 flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#8A877E]/5">
+                      <div className="flex items-center gap-3">
+                        <Languages className="w-4 h-4 text-[#8A877E]" />
+                        <select 
+                          value={selectedLanguage}
+                          onChange={e => setSelectedLanguage(e.target.value)}
+                          className="select-dark bg-transparent border border-[#8A877E]/50 text-[#EAE8E1] text-xs uppercase tracking-widest py-1.5 px-2 focus:outline-none focus:border-[#2D7A4F]"
+                        >
+                          {INDIAN_LANGUAGES.map(lang => (
+                            <option key={lang.code} value={lang.code} className="bg-[#0D0D0C]">
+                              {lang.native} ({lang.code})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        onClick={handleSpeakAdvisory}
+                        className={`btn-accent px-4 py-2 text-[10px] uppercase tracking-widest flex items-center gap-2 transition-colors ${
+                          isSpeaking ? 'bg-[#EAE8E1] text-[#0D0D0C]' : ''
+                        }`}
+                      >
+                        {isSpeaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                        {isSpeaking ? 'Stop Voice' : 'Listen'}
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-8 sm:p-10 space-y-8">
+                      <div className="border border-[#8A877E]/20 p-6 bg-[#0D0D0C]">
+                        <p className="text-[10px] text-[#2D7A4F] uppercase tracking-widest mb-3">Advisory Explanation</p>
+                        <p className="text-[#EAE8E1] text-base leading-relaxed font-[Instrument_Sans]">
+                          {recommendation.translations[selectedLanguage] || recommendation.translations.en}
                         </p>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-3 pt-2 max-w-lg mx-auto">
-                        <button 
-                          onClick={() => { setLastLoggedAction(null); setActiveTab('log'); }}
-                          className="flex-1 py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-2xl shadow-md transition-colors text-xs"
-                        >
-                          Log New Soil Reading
-                        </button>
-                        <button 
-                          onClick={() => { setLastLoggedAction(null); setActiveTab('history'); fetchHistory(); }}
-                          className="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl border border-slate-200 transition-colors text-xs"
-                        >
-                          View History Logs
-                        </button>
-                        <Link 
-                          to={`/field/${id}/analytics`}
-                          className="flex-1 py-3.5 px-4 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded-2xl border border-blue-200 text-center transition-colors text-xs flex items-center justify-center"
-                        >
-                          Water Analytics
-                        </Link>
+                      {/* foot-ledger stats grid */}
+                      <div className="foot-ledger grid grid-cols-2 sm:grid-cols-4 border border-[#8A877E]/30">
+                        <div className="p-4 border-b sm:border-b-0 sm:border-r border-[#8A877E]/30 flex flex-col items-center justify-center text-center">
+                          <p className="text-[10px] text-[#8A877E] uppercase tracking-widest mb-1 flex items-center gap-1">
+                            <Timer className="w-3 h-3" /> Pump
+                          </p>
+                          <p className="text-xl text-[#EAE8E1] font-[DM_Mono]">{recommendation.pump_runtime_mins || 0}m</p>
+                        </div>
+                        <div className="p-4 border-b sm:border-b-0 sm:border-r border-[#8A877E]/30 flex flex-col items-center justify-center text-center">
+                          <p className="text-[10px] text-[#8A877E] uppercase tracking-widest mb-1 flex items-center gap-1">
+                            <Gauge className="w-3 h-3" /> Deficit
+                          </p>
+                          <p className="text-xl text-[#EAE8E1] font-[DM_Mono]">{recommendation.moistureDeficitPct ? recommendation.moistureDeficitPct.toFixed(1) : 0}%</p>
+                        </div>
+                        <div className="p-4 border-r border-[#8A877E]/30 flex flex-col items-center justify-center text-center">
+                          <p className="text-[10px] text-[#8A877E] uppercase tracking-widest mb-1 flex items-center gap-1">
+                            <Droplet className="w-3 h-3" /> ET Loss
+                          </p>
+                          <p className="text-xl text-[#EAE8E1] font-[DM_Mono]">{recommendation.etcMm}mm</p>
+                        </div>
+                        <div className="p-4 flex flex-col items-center justify-center text-center">
+                          <p className="text-[10px] text-[#8A877E] uppercase tracking-widest mb-1 flex items-center gap-1">
+                            <CloudRain className="w-3 h-3" /> Rain
+                          </p>
+                          <p className="text-xl text-[#EAE8E1] font-[DM_Mono]">{recommendation.effectiveRainMm}mm</p>
+                        </div>
                       </div>
-                    </motion.div>
-                  ) : !recommendation ? (
-                    <div className="text-center py-16 flex flex-col items-center">
-                      <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4" />
-                      <p className="text-emerald-900 font-black">Executing High-Precision FAO-56 Advisory Engine...</p>
-                      <p className="text-xs text-slate-500 font-medium mt-1">Calculating evapotranspiration loss rate & effective rainfall offset</p>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                        <button 
+                          onClick={() => handleLogIrrigation('irrigated')} 
+                          disabled={submitting}
+                          className="btn-accent flex-1 flex justify-center items-center py-4 text-xs uppercase tracking-widest disabled:opacity-50"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" /> Mark Irrigated
+                        </button>
+                        <button 
+                          onClick={() => handleLogIrrigation('skipped')} 
+                          disabled={submitting}
+                          className="btn-ghost flex-1 flex justify-center items-center py-4 text-xs uppercase tracking-widest border border-[#8A877E]/50 text-[#8A877E] hover:text-[#EAE8E1]"
+                        >
+                          <Clock className="w-4 h-4 mr-2" /> Skip
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* HISTORY TAB */}
+            {activeTab === 'history' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Moisture Readings */}
+                <div>
+                  <h3 className="text-xs text-[#EAE8E1] uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-[#8A877E]/30 pb-2">
+                    <Droplet className="w-4 h-4 text-[#8A877E]" /> Readings
+                  </h3>
+                  {history.readings.length === 0 ? (
+                    <div className="text-center py-10 border border-[#8A877E]/20 text-[#8A877E] text-xs uppercase tracking-widest">
+                      No readings.
                     </div>
                   ) : (
-                    <motion.div 
-                      initial={{ scale: 0.96, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className={`rounded-3xl border-2 overflow-hidden shadow-2xl ${
-                        recommendation.recommendation === 'irrigate' 
-                          ? 'border-blue-300 bg-white' 
-                          : 'border-emerald-300 bg-white'
-                      }`}
-                    >
-                      {/* Result Header */}
-                      <div className={`p-8 text-center ${
-                        recommendation.recommendation === 'irrigate' 
-                          ? 'bg-gradient-to-b from-blue-50 to-white' 
-                          : 'bg-gradient-to-b from-emerald-50 to-white'
-                      }`}>
-                        <div className="inline-flex items-center space-x-2 bg-white/90 px-4 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-800 mb-4 shadow-xs">
-                          <span>Urgency Level: {recommendation.urgency}</span>
-                        </div>
-                        <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
-                          recommendation.recommendation === 'irrigate' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                        }`}>
-                          {recommendation.recommendation === 'irrigate' 
-                            ? <Droplet className="w-8 h-8" />
-                            : <CheckCircle className="w-8 h-8" />
-                          }
-                        </div>
-                        <h2 className={`text-4xl sm:text-5xl font-black tracking-tight ${
-                          recommendation.recommendation === 'irrigate' ? 'text-blue-700' : 'text-emerald-700'
-                        }`}>
-                          {recommendation.recommendation === 'irrigate' 
-                            ? `Irrigate: ${recommendation.amount_mm} mm` 
-                            : 'No Irrigation Needed'}
-                        </h2>
-                      </div>
-
-                      {/* Multi-Language & AI Voice Controls */}
-                      <div className="px-6 sm:px-8 py-4 bg-emerald-50/70 border-y border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        {/* Language Selector */}
-                        <div className="flex items-center space-x-2 w-full sm:w-auto">
-                          <Languages className="w-4 h-4 text-emerald-800 shrink-0" />
-                          <span className="text-xs font-extrabold text-emerald-900 shrink-0">Language:</span>
-                          <select 
-                            value={selectedLanguage}
-                            onChange={e => setSelectedLanguage(e.target.value)}
-                            className="bg-white border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs w-full sm:w-auto"
-                          >
-                            {INDIAN_LANGUAGES.map(lang => (
-                              <option key={lang.code} value={lang.code}>
-                                {lang.native} ({lang.name})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* AI Voice Speaker Button */}
-                        <button
-                          onClick={handleSpeakAdvisory}
-                          className={`flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl font-black text-xs transition-all shadow-md w-full sm:w-auto ${
-                            isSpeaking 
-                              ? 'bg-amber-500 text-amber-950 animate-pulse' 
-                              : 'bg-emerald-700 hover:bg-emerald-800 text-white'
-                          }`}
-                        >
-                          {isSpeaking ? (
-                            <><VolumeX className="w-4 h-4" /> Stop AI Voice</>
-                          ) : (
-                            <><Volume2 className="w-4 h-4" /> 🔊 Listen Advisory ({INDIAN_LANGUAGES.find(l => l.code === selectedLanguage)?.native})</>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Description Box */}
-                      <div className="p-6 sm:p-8 space-y-6">
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80">
-                          <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1.5 flex items-center">
-                            <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-600" /> Localized Advisory Explanation:
-                          </p>
-                          <p className="text-slate-800 text-sm leading-relaxed font-bold">
-                            {recommendation.translations[selectedLanguage] || recommendation.translations.en}
-                          </p>
-                        </div>
-
-                        {/* Granular Technical Breakdown */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
-                              <Timer className="w-3 h-3 mr-1 text-amber-600" /> Pump Motor
-                            </p>
-                            <p className="text-base font-black text-slate-900 mt-1">
-                              ~{recommendation.pump_runtime_mins || 0} mins
-                            </p>
-                          </div>
-                          
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
-                              <Gauge className="w-3 h-3 mr-1 text-blue-600" /> Soil Deficit
-                            </p>
-                            <p className="text-base font-black text-slate-900 mt-1">
-                              {recommendation.moistureDeficitPct ? recommendation.moistureDeficitPct.toFixed(1) : 0}%
-                            </p>
-                          </div>
-
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
-                              <Droplet className="w-3 h-3 mr-1 text-teal-600" /> ET Loss
-                            </p>
-                            <p className="text-base font-black text-slate-900 mt-1">
-                              {recommendation.etcMm} mm/day
-                            </p>
-                          </div>
-
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                            <p className="text-[10px] text-slate-500 font-extrabold uppercase flex items-center justify-center">
-                              <CloudRain className="w-3 h-3 mr-1 text-indigo-600" /> Usable Rain
-                            </p>
-                            <p className="text-base font-black text-slate-900 mt-1">
-                              {recommendation.effectiveRainMm} mm
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex gap-3">
-                          <button 
-                            onClick={() => handleLogIrrigation('irrigated')} 
-                            disabled={submitting}
-                            className="flex-1 flex justify-center items-center px-5 py-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-black shadow-lg transition-all disabled:opacity-50 text-sm"
-                          >
-                            <CheckCircle className="w-5 h-5 mr-2" /> Mark Irrigated
-                          </button>
-                          <button 
-                            onClick={() => handleLogIrrigation('skipped')} 
-                            disabled={submitting}
-                            className="flex-1 flex justify-center items-center px-5 py-4 bg-slate-100 text-slate-700 rounded-2xl font-bold border border-slate-200 hover:bg-slate-200 transition-all text-sm"
-                          >
-                            <Clock className="w-5 h-5 mr-2" /> Skip
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
+                    <div className="border border-[#8A877E]/30 overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#8A877E]/30 bg-[#8A877E]/5 text-[10px] uppercase tracking-widest text-[#8A877E]">
+                            <th className="p-3 font-normal">Date</th>
+                            <th className="p-3 font-normal">Moisture</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.readings.slice(0, 10).map((r, i) => (
+                            <tr key={r.id} className={`border-b border-[#8A877E]/10 hover:bg-[#8A877E]/5 text-sm ${i === history.readings.length - 1 ? 'border-0' : ''}`}>
+                              <td className="p-3 text-[#8A877E] font-[DM_Mono]">{toDate(r.created_at).toLocaleDateString()}</td>
+                              <td className="p-3 text-[#EAE8E1] font-[DM_Mono]">{r.moisture_percent}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
-              )}
 
-              {/* HISTORY TAB */}
-              {activeTab === 'history' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Moisture Readings */}
-                  <div>
-                    <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-3 flex items-center">
-                      <Droplet className="w-4 h-4 mr-2 text-blue-600" /> Soil Moisture Readings
-                    </h3>
-                    {history.readings.length === 0 ? (
-                      <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 font-medium">
-                        No readings logged yet.
-                      </div>
-                    ) : (
-                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-                        <table className="min-w-full divide-y divide-slate-100">
-                          <thead className="bg-slate-50">
-                            <tr>
-                              <th className="py-3 pl-4 pr-3 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider">Date</th>
-                              <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider">Moisture</th>
+                {/* Irrigation Logs */}
+                <div>
+                  <h3 className="text-xs text-[#EAE8E1] uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-[#8A877E]/30 pb-2">
+                    <CheckCircle className="w-4 h-4 text-[#8A877E]" /> Irrigation
+                  </h3>
+                  {history.logs.length === 0 ? (
+                    <div className="text-center py-10 border border-[#8A877E]/20 text-[#8A877E] text-xs uppercase tracking-widest">
+                      No actions.
+                    </div>
+                  ) : (
+                    <div className="border border-[#8A877E]/30 overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#8A877E]/30 bg-[#8A877E]/5 text-[10px] uppercase tracking-widest text-[#8A877E]">
+                            <th className="p-3 font-normal">Date</th>
+                            <th className="p-3 font-normal">Action</th>
+                            <th className="p-3 font-normal">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.logs.slice(0, 10).map((r, i) => (
+                            <tr key={r.id} className={`border-b border-[#8A877E]/10 hover:bg-[#8A877E]/5 text-sm ${i === history.logs.length - 1 ? 'border-0' : ''}`}>
+                              <td className="p-3 text-[#8A877E] font-[DM_Mono]">{toDate(r.logged_at).toLocaleDateString()}</td>
+                              <td className="p-3">
+                                <span className={`text-[10px] uppercase tracking-widest border px-2 py-0.5 ${
+                                  r.action_taken === 'irrigated' ? 'border-[#2D7A4F] text-[#4EC97A]' : 'border-[#8A877E]/50 text-[#8A877E]'
+                                }`}>
+                                  {r.action_taken}
+                                </span>
+                              </td>
+                              <td className="p-3 text-[#EAE8E1] font-[DM_Mono]">{r.actual_amount_mm || 0}mm</td>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {history.readings.slice(0, 10).map(r => (
-                              <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-xs text-slate-600 font-medium">{toDate(r.created_at).toLocaleDateString()}</td>
-                                <td className="whitespace-nowrap px-3 py-3 text-sm font-black text-blue-600">{r.moisture_percent}%</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Irrigation Logs */}
-                  <div>
-                    <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-3 flex items-center">
-                      <CheckCircle className="w-4 h-4 mr-2 text-emerald-600" /> Irrigation Actions
-                    </h3>
-                    {history.logs.length === 0 ? (
-                      <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 font-medium">
-                        No irrigation actions logged yet.
-                      </div>
-                    ) : (
-                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-                        <table className="min-w-full divide-y divide-slate-100">
-                          <thead className="bg-slate-50">
-                            <tr>
-                              <th className="py-3 pl-4 pr-3 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider">Date</th>
-                              <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider">Action</th>
-                              <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider">Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {history.logs.slice(0, 10).map(r => (
-                              <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-xs text-slate-600 font-medium">{toDate(r.logged_at).toLocaleDateString()}</td>
-                                <td className="whitespace-nowrap px-3 py-3 text-xs">
-                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${
-                                    r.action_taken === 'irrigated' 
-                                      ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                  }`}>
-                                    {r.action_taken === 'irrigated' ? '💧 Irrigated' : '⏭ Skipped'}
-                                  </span>
-                                </td>
-                                <td className="whitespace-nowrap px-3 py-3 text-xs font-black text-slate-900">{r.actual_amount_mm || 0}mm</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

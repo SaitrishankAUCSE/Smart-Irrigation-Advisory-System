@@ -3,8 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getIrrigationLogs, toDate } from '../services/dataService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ArrowLeft, Target, TrendingUp, Droplet, Printer, Award, ShieldCheck } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useReveal } from '../hooks/useReveal';
 
 export default function WaterUsageDashboard() {
   const { id } = useParams();
@@ -12,7 +11,10 @@ export default function WaterUsageDashboard() {
   const [usageData, setUsageData] = useState([]);
   const [adherence, setAdherence] = useState(null);
   const [totalWater, setTotalWater] = useState(0);
+  const [readingsCount, setReadingsCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  useReveal();
 
   useEffect(() => {
     if (currentUser) fetchAnalytics();
@@ -41,6 +43,7 @@ export default function WaterUsageDashboard() {
       setUsageData(Object.entries(usageDict).map(([date, amount]) => ({ date, actual_amount_mm: amount })));
       setAdherence(logs.length > 0 ? Math.round((adheredCount / logs.length) * 100) : 100);
       setTotalWater(Math.round(total * 10) / 10);
+      setReadingsCount(logs.length);
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,122 +53,142 @@ export default function WaterUsageDashboard() {
 
   if (!currentUser) return null;
   if (loading) return (
-    <div className="flex items-center justify-center py-32">
-      <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+    <div className="wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#0D0D0C', color: '#EAE8E1' }}>
+      <div style={{ fontFamily: "'DM Mono', monospace" }}>Loading...</div>
     </div>
   );
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      transition={{ duration: 0.3 }}
-      className="max-w-6xl mx-auto space-y-6"
-    >
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Link to={`/field/${id}`} className="w-11 h-11 bg-white border border-emerald-200 rounded-2xl flex items-center justify-center hover:bg-emerald-50 transition-colors shadow-sm text-emerald-700">
-            <ArrowLeft className="w-5 h-5" />
+    <div className="wrap" style={{ backgroundColor: '#0D0D0C', color: '#EAE8E1', fontFamily: "'Instrument Sans', sans-serif", minHeight: '100vh', padding: '40px' }}>
+      <div className="band" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        
+        {/* HEADER */}
+        <div style={{ marginBottom: '60px' }} data-reveal>
+          <Link to={`/field/${id}`} style={{ color: '#8A877E', textDecoration: 'none', marginBottom: '24px', display: 'inline-block', fontFamily: "'Instrument Sans', sans-serif" }}>
+            ← Back to Field {id}
           </Link>
+          <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '3rem', margin: '0', fontWeight: 'normal', color: '#EAE8E1' }}>
+            Water Telemetry & Analytics
+          </h1>
+        </div>
+
+        {/* STATS SECTION */}
+        <div className="head" style={{ marginBottom: '32px' }} data-reveal>
+          <div className="label" style={{ color: '#8A877E', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '0.05em', marginBottom: '8px' }}>
+            Analytics
+          </div>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '2.5rem', margin: '0', fontWeight: 'normal' }}>
+            Water usage intelligence.
+          </h2>
+        </div>
+
+        <div className="foot-ledger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px', marginBottom: '60px' }} data-reveal>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Water Telemetry & Analytics</h1>
-            <p className="text-sm text-slate-500 font-semibold">Irrigation volume trends and recommendation adherence score</p>
+            <div style={{ color: '#8A877E', fontSize: '0.9rem', marginBottom: '12px' }}>Total Water Applied</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '1.75rem', color: '#EAE8E1' }}>{totalWater} mm</div>
           </div>
-        </div>
-        <button 
-          onClick={() => window.print()}
-          className="px-5 py-3 bg-white border border-emerald-200 text-emerald-800 rounded-2xl hover:bg-emerald-50 flex items-center shadow-sm transition-all font-black text-sm"
-        >
-          <Printer className="w-4 h-4 mr-2" />
-          Export Report
-        </button>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
-          <div className="flex items-center text-xs font-extrabold text-blue-800 uppercase tracking-wider mb-1">
-            <Droplet className="w-4 h-4 mr-1.5 text-blue-600" /> Total Water Applied
+          <div>
+            <div style={{ color: '#8A877E', fontSize: '0.9rem', marginBottom: '12px' }}>Advisory Adherence</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '1.75rem', color: '#EAE8E1' }}>{adherence}%</div>
           </div>
-          <p className="text-3xl font-black text-slate-900">{totalWater} <span className="text-sm font-bold text-slate-500">mm</span></p>
-        </div>
-
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
-          <div className="flex items-center text-xs font-extrabold text-amber-800 uppercase tracking-wider mb-1">
-            <Award className="w-4 h-4 mr-1.5 text-amber-600" /> Advisory Adherence Rate
-          </div>
-          <p className="text-3xl font-black text-slate-900">{adherence}%</p>
-        </div>
-
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-emerald-100 p-5 shadow-sm">
-          <div className="flex items-center text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1">
-            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-600" /> Conservation Rating
-          </div>
-          <p className="text-xl font-black text-emerald-700 mt-1">
-            {adherence >= 80 ? '🌟 Grade A+ Efficient' : '👍 Good Efficiency'}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart */}
-        <div className="lg:col-span-2">
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-emerald-100 h-full">
-            <h2 className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-4 flex items-center">
-              <TrendingUp className="w-4 h-4 mr-2 text-blue-600" />
-              Daily Water Usage Trend (mm)
-            </h2>
-            <div className="h-72 w-full">
-              {usageData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={usageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                    <XAxis dataKey="date" tick={{fontSize: 11, fill: '#64748B'}} axisLine={false} tickLine={false} />
-                    <YAxis tick={{fontSize: 11, fill: '#64748B'}} axisLine={false} tickLine={false} />
-                    <RechartsTooltip cursor={{fill: '#F1F5F9'}} contentStyle={{backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #CBD5E1', color: '#0F172A', fontSize: '12px'}} />
-                    <Bar dataKey="actual_amount_mm" fill="#2563EB" radius={[8, 8, 0, 0]} name="Water (mm)" barSize={32} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-sm font-medium">
-                  <Droplet className="w-5 h-5 mr-2 text-blue-500" /> No irrigation action records available yet
-                </div>
-              )}
+          <div>
+            <div style={{ color: '#8A877E', fontSize: '0.9rem', marginBottom: '12px' }}>Conservation Grade</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '1.75rem', color: '#3DA667' }}>
+              {adherence >= 80 ? 'Grade A+' : 'Good'}
             </div>
           </div>
+          <div>
+            <div style={{ color: '#8A877E', fontSize: '0.9rem', marginBottom: '12px' }}>Readings Count</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '1.75rem', color: '#EAE8E1' }}>{readingsCount}</div>
+          </div>
         </div>
 
-        {/* Adherence Ring */}
-        <div className="lg:col-span-1">
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-emerald-100 flex flex-col items-center text-center justify-center h-full min-h-[320px]">
-            <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4 text-emerald-700 shadow-inner">
-              <Target className="w-8 h-8" />
-            </div>
-            <h2 className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-1">Adherence Score</h2>
-            <p className="text-slate-500 text-xs mb-6 max-w-xs font-medium">Measures how often irrigation decisions match AI recommendations.</p>
-            
-            <div className="relative">
-              <svg className="w-36 h-36 transform -rotate-90">
-                <circle cx="72" cy="72" r="62" stroke="#E2E8F0" strokeWidth="10" fill="none" />
-                <motion.circle 
-                  cx="72" cy="72" r="62" 
-                  stroke="#059669" 
-                  strokeWidth="10" 
+        <div className="moire" style={{ height: '1px', background: 'var(--rule, #333)', margin: '60px 0' }} data-reveal></div>
+
+        {/* CHART SECTION */}
+        <div className="head" style={{ marginBottom: '32px' }} data-reveal>
+          <div className="label" style={{ color: '#8A877E', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '0.05em', marginBottom: '8px' }}>
+            Trend
+          </div>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '2.5rem', margin: '0', fontWeight: 'normal' }}>
+            Daily water consumption.
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(250px, 300px)', gap: '60px', marginBottom: '60px' }} data-reveal>
+          <div style={{ height: '350px' }}>
+            {usageData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={usageData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--rule, #333)" />
+                  <XAxis dataKey="date" tick={{fontSize: 12, fill: '#8A877E', fontFamily: "'DM Mono', monospace"}} axisLine={{stroke: '#8A877E'}} tickLine={false} />
+                  <YAxis tick={{fontSize: 12, fill: '#8A877E', fontFamily: "'DM Mono', monospace"}} axisLine={{stroke: '#8A877E'}} tickLine={false} />
+                  <RechartsTooltip 
+                    cursor={{fill: 'rgba(234,232,225,0.05)'}} 
+                    contentStyle={{backgroundColor: '#1a1a19', borderRadius: '8px', border: '1px solid #333', color: '#EAE8E1', fontFamily: "'DM Mono', monospace", fontSize: '13px'}} 
+                  />
+                  <Bar dataKey="actual_amount_mm" fill="#2D7A4F" radius={[4, 4, 0, 0]} name="Water (mm)" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8A877E', fontFamily: "'DM Mono', monospace" }}>
+                No records available
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', width: '200px', height: '200px' }}>
+              <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                <circle cx="100" cy="100" r="85" stroke="rgba(234,232,225,.1)" strokeWidth="12" fill="none" />
+                <circle 
+                  cx="100" cy="100" r="85" 
+                  stroke="#2D7A4F" 
+                  strokeWidth="12" 
                   fill="none" 
-                  strokeDasharray={`${2 * Math.PI * 62}`}
-                  initial={{ strokeDashoffset: 2 * Math.PI * 62 }}
-                  animate={{ strokeDashoffset: (2 * Math.PI * 62) * (1 - ((adherence || 0) / 100)) }}
-                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  strokeDasharray={`${2 * Math.PI * 85}`}
+                  strokeDashoffset={(2 * Math.PI * 85) * (1 - ((adherence || 0) / 100))}
                   strokeLinecap="round" 
+                  style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
                 />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-4xl font-black text-slate-900">{adherence !== null ? adherence : '--'}%</span>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '2.5rem', color: '#EAE8E1' }}>{adherence !== null ? adherence : '--'}%</span>
               </div>
             </div>
+            <div style={{ color: '#8A877E', marginTop: '24px', fontSize: '1rem', fontFamily: "'Instrument Sans', sans-serif" }}>Adherence Score</div>
           </div>
         </div>
+
+        <div className="moire" style={{ height: '1px', background: 'var(--rule, #333)', margin: '60px 0' }} data-reveal></div>
+
+        <div data-reveal style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '80px' }}>
+          <button 
+            className="btn-ghost"
+            onClick={() => window.print()}
+            style={{ 
+              padding: '12px 24px', 
+              backgroundColor: 'transparent', 
+              border: '1px solid #8A877E', 
+              color: '#EAE8E1', 
+              cursor: 'pointer', 
+              fontFamily: "'Instrument Sans', sans-serif", 
+              fontSize: '1rem',
+              borderRadius: '4px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Export Report
+          </button>
+        </div>
+
+        <footer className="site-foot" style={{ borderTop: '1px solid var(--rule, #333)', paddingTop: '32px' }} data-reveal>
+          <div className="foot-tail" style={{ color: '#8A877E', fontSize: '0.9rem', fontFamily: "'Instrument Sans', sans-serif" }}>
+            AgriSense · Quantum Coders
+          </div>
+        </footer>
+
       </div>
-    </motion.div>
+    </div>
   );
 }
