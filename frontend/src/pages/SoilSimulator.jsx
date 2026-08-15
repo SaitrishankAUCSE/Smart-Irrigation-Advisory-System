@@ -85,9 +85,26 @@ const CROP_DATABASE = {
   }
 };
 
+const LETS_GO_TRANSLATIONS = [
+  { lang: 'English', text: "Let's Go", sub: 'Start Advisory' },
+  { lang: 'Telugu', text: 'పదండి ప్రారంభిద్దాం', sub: 'తెలుగు' },
+  { lang: 'Hindi', text: 'चलो शुरू करें', sub: 'हिन्दी' },
+  { lang: 'Tamil', text: 'தொடங்குவோம்', sub: 'தமிழ்' },
+  { lang: 'Kannada', text: 'ಪ್ರಾರಂಭಿಸೋಣ', sub: 'ಕನ್ನಡ' },
+  { lang: 'Marathi', text: 'चला सुरू करूया', sub: 'मराठी' },
+  { lang: 'Bengali', text: 'চলুন শুরু করি', sub: 'বাংলা' },
+  { lang: 'Gujarati', text: 'ચાલો શરૂ કરીએ', sub: 'ગુજરાતી' },
+  { lang: 'Malayalam', text: 'തുടങ്ങാം', sub: 'മലയാളം' },
+  { lang: 'Punjabi', text: 'ਚਲੋ ਸ਼ੁਰੂ ਕਰੀਏ', sub: 'ਪੰਜਾਬੀ' }
+];
+
 export default function SoilSimulator() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // Multilingual animated "Let's Go" button state
+  const [letsGoIndex, setLetsGoIndex] = useState(0);
+  const [fadeKey, setFadeKey] = useState(0);
 
   // Simulation Parameters
   const [selectedCrop, setSelectedCrop] = useState('Rice (Paddy)');
@@ -109,6 +126,15 @@ export default function SoilSimulator() {
 
   useReveal({}, []);
   useStagger([]);
+
+  // Auto-cycle "Let's Go" translation every 1.8s
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLetsGoIndex(prev => (prev + 1) % LETS_GO_TRANSLATIONS.length);
+      setFadeKey(prev => prev + 1);
+    }, 1800);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -253,6 +279,112 @@ export default function SoilSimulator() {
           </em>
         </div>
 
+        {/* ATTRACTIVE CENTER "LET'S GO" BUTTON WITH MULTILINGUAL BLINK & AUTO-SCROLL */}
+        <div style={{
+          position: 'absolute',
+          right: 'clamp(20px, 10vw, 140px)',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          {/* Curly Arrow Indicator & Label */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', transform: 'rotate(-4deg)' }}>
+            <span style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontStyle: 'italic',
+              fontSize: '1.4rem',
+              color: '#4EC97A',
+              letterSpacing: '0.02em',
+              textShadow: '0 0 20px rgba(78, 201, 122, 0.45)'
+            }}>
+              Calibrate Soil
+            </span>
+            <svg width="46" height="36" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 10 C 24 2, 48 8, 42 26 C 38 38, 20 36, 26 24 C 30 16, 48 24, 52 40" stroke="#4EC97A" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="3 3" />
+              <path d="M44 34 L 52 40 L 42 43" stroke="#4EC97A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          {/* Multilingual Glowing "Let's Go" Action Button */}
+          <button
+            onClick={() => {
+              const el = document.getElementById('simulator-cockpit');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              minWidth: '220px',
+              background: 'rgba(234, 232, 225, 0.08)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(78, 201, 122, 0.65)',
+              color: 'var(--sheet)',
+              padding: '14px 28px',
+              borderRadius: '100px',
+              cursor: 'pointer',
+              boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 25px rgba(78, 201, 122, 0.3)',
+              transition: 'all 0.3s cubic-bezier(.2, .7, .2, 1)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'var(--sheet)';
+              e.currentTarget.style.color = 'var(--proof)';
+              e.currentTarget.style.borderColor = 'var(--sheet)';
+              e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)';
+              e.currentTarget.style.boxShadow = '0 15px 35px -5px rgba(0, 0, 0, 0.8), 0 0 35px rgba(78, 201, 122, 0.6)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(234, 232, 225, 0.08)';
+              e.currentTarget.style.color = 'var(--sheet)';
+              e.currentTarget.style.borderColor = 'rgba(78, 201, 122, 0.65)';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 25px rgba(78, 201, 122, 0.3)';
+            }}
+          >
+            <Sparkles size={16} color="#4EC97A" />
+            
+            {/* Morphing / Blinking Translated Text Container */}
+            <div 
+              key={fadeKey}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                animation: 'letsGoFade 0.35s cubic-bezier(.2, .7, .2, 1) forwards'
+              }}
+            >
+              <span style={{
+                fontFamily: "'Instrument Serif', serif",
+                fontSize: '1.45rem',
+                fontWeight: '600',
+                letterSpacing: '0.01em',
+                lineHeight: 1
+              }}>
+                {LETS_GO_TRANSLATIONS[letsGoIndex].text}
+              </span>
+              <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '9px',
+                opacity: 0.7,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                marginTop: '2px'
+              }}>
+                {LETS_GO_TRANSLATIONS[letsGoIndex].sub}
+              </span>
+            </div>
+
+            <ArrowRight size={15} />
+          </button>
+        </div>
+
         {/* Top Floating Telemetry Status */}
         <div style={{
           position: 'absolute', zIndex: 2,
@@ -272,7 +404,7 @@ export default function SoilSimulator() {
       </section>
 
       {/* 2. THE MAIN SCIENTIFIC LABORATORY COCKPIT */}
-      <section className="band wrap" data-reveal style={{ paddingTop: '4rem', paddingBottom: '4rem' }}>
+      <section id="simulator-cockpit" className="band wrap" data-reveal style={{ paddingTop: '4rem', paddingBottom: '4rem' }}>
         <div className="head" style={{ borderBottom: '1px solid rgba(234, 232, 225, 0.1)', paddingBottom: '2rem' }}>
           <span className="label" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--accent-text)', display: 'block', marginBottom: '0.5rem' }}>
             Dynamic Agro-Telemetry Simulation
