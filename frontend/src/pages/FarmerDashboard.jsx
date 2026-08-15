@@ -21,8 +21,8 @@ export default function FarmerDashboard() {
     name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative', soil_type: 'Loamy Soil'
   });
 
-  useReveal();
-  useStagger();
+  useReveal({}, [loading]);
+  useStagger([loading]);
 
   const fetchFields = async () => {
     if (!currentUser) return;

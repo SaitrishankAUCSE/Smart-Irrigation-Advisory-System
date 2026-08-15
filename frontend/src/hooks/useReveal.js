@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
  * Adds .shown class when element enters viewport (once).
  * Mirrors drowningdot.com's data-reveal / data-stagger pattern.
  */
-export function useReveal(options = {}) {
+export function useReveal(options = {}, dependencies = []) {
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
       document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('shown'));
@@ -37,14 +37,14 @@ export function useReveal(options = {}) {
       observer.disconnect();
       clearTimeout(timer);
     };
-  }, []);
+  }, dependencies);
 }
 
 /**
  * useStagger — assigns --i CSS variable to children for staggered animation.
  * Call on a container ref. Children get sequential delay indices.
  */
-export function useStagger() {
+export function useStagger(dependencies = []) {
   useEffect(() => {
     const containers = document.querySelectorAll('[data-stagger]');
     
@@ -82,5 +82,5 @@ export function useStagger() {
       observer.disconnect();
       clearTimeout(timer);
     };
-  }, []);
+  }, dependencies);
 }
