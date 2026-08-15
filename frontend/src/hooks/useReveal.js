@@ -7,14 +7,9 @@ import { useEffect, useRef } from 'react';
  * Mirrors drowningdot.com's data-reveal / data-stagger pattern.
  */
 export function useReveal(options = {}) {
-  const ref = useRef(null);
-
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
     if (!('IntersectionObserver' in window)) {
-      el.classList.add('shown');
+      document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('shown'));
       return;
     }
 
@@ -30,11 +25,12 @@ export function useReveal(options = {}) {
       { rootMargin: options.rootMargin || '0px 0px -12% 0px' }
     );
 
-    observer.observe(el);
+    const elements = document.querySelectorAll('[data-reveal]');
+    elements.forEach(el => observer.observe(el));
 
     // Floor: if tab was backgrounded, show after 2.6s
     const timer = setTimeout(() => {
-      el.classList.add('shown');
+      elements.forEach(el => el.classList.add('shown'));
     }, 2600);
 
     return () => {
@@ -42,8 +38,6 @@ export function useReveal(options = {}) {
       clearTimeout(timer);
     };
   }, []);
-
-  return ref;
 }
 
 /**
@@ -51,19 +45,18 @@ export function useReveal(options = {}) {
  * Call on a container ref. Children get sequential delay indices.
  */
 export function useStagger() {
-  const ref = useRef(null);
-
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
+    const containers = document.querySelectorAll('[data-stagger]');
+    
     // Number children for CSS stagger delay
-    Array.from(el.children).forEach((child, i) => {
-      child.style.setProperty('--i', Math.min(i, 9));
+    containers.forEach(el => {
+      Array.from(el.children).forEach((child, i) => {
+        child.style.setProperty('--i', Math.min(i, 9));
+      });
     });
 
     if (!('IntersectionObserver' in window)) {
-      el.classList.add('shown');
+      containers.forEach(el => el.classList.add('shown'));
       return;
     }
 
@@ -79,10 +72,10 @@ export function useStagger() {
       { rootMargin: '0px 0px -12% 0px' }
     );
 
-    observer.observe(el);
+    containers.forEach(el => observer.observe(el));
 
     const timer = setTimeout(() => {
-      el.classList.add('shown');
+      containers.forEach(el => el.classList.add('shown'));
     }, 2600);
 
     return () => {
@@ -90,6 +83,4 @@ export function useStagger() {
       clearTimeout(timer);
     };
   }, []);
-
-  return ref;
 }
