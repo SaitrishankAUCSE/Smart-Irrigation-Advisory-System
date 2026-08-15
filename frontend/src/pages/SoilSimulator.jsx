@@ -230,7 +230,7 @@ export default function SoilSimulator() {
       {/* 1. HERO SECTION WITH ICONIC BROWN CURTAIN CANVAS */}
       <section style={{ position: 'relative', height: '70vh', minHeight: '520px', overflow: 'hidden', background: 'var(--proof)' }}>
         <div style={{ position: 'absolute', inset: 0 }}>
-          <PleatCanvas brandText="Simulator" />
+          <PleatCanvas brandText="Bhoomi Matrix" />
         </div>
 
         {/* Gradient Scrim */}
@@ -247,9 +247,9 @@ export default function SoilSimulator() {
           fontSize: 'clamp(34px, 8.5vw, 138px)',
           lineHeight: '.96', letterSpacing: '-.035em',
         }}>
-          <span>Quantum Soil</span>
+          <span>Bhoomi</span>
           <em style={{ fontStyle: 'normal', color: 'inherit', opacity: '.72', display: 'block' }}>
-            Laboratory.
+            Matrix.
           </em>
         </div>
 
@@ -263,11 +263,11 @@ export default function SoilSimulator() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#4EC97A', boxShadow: '0 0 10px #4EC97A' }} />
-            <span>Active FAO-56 Penman-Monteith Calculation Kernel</span>
+            <span>Telemetry: {currentUser?.name || 'Farmer'} · Active FAO-56 Soil Matrix</span>
           </div>
-          <Link to="/bhoomi" style={{ color: 'var(--sheet)', textDecoration: 'none', borderBottom: '1px solid var(--accent)' }}>
-            ← Return to Bhoomi Hub
-          </Link>
+          <div>
+            <span>Soil Intelligence Platform</span>
+          </div>
         </div>
       </section>
 
