@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Leaf, LogOut, X, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Leaf, LogOut, X, AlertTriangle, ArrowLeft, Sparkles } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import AuthModal from './AuthModal';
 
