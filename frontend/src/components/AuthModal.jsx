@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { auth, googleProvider, db } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { X, AlertCircle } from 'lucide-react';
 
 export default function AuthModal({ onClose }) {
@@ -50,20 +50,41 @@ export default function AuthModal({ onClose }) {
     return code ? `[${code}] ${msg}` : msg || 'Authentication failed. Please try again.';
   };
 
-  const handleUserDoc = async (user) => {
+  const recordUserInFirestore = async (user, actionType, provider) => {
     try {
       const userRef = doc(db, 'users', user.uid);
       const snap = await getDoc(userRef);
+      
+      const profileData = {
+        uid: user.uid,
+        email: user.email || '',
+        name: user.displayName || user.email?.split('@')[0] || 'Farmer',
+        photo_url: user.photoURL || null,
+        email_verified: user.emailVerified || false,
+        auth_provider: provider,
+        last_login_at: new Date().toISOString(),
+        role: 'farmer'
+      };
+
       if (!snap.exists()) {
-        await setDoc(userRef, {
-          email: user.email || '',
-          name: user.displayName || user.email?.split('@')[0] || 'Farmer',
-          role: 'farmer',
-          created_at: new Date().toISOString()
-        });
+        profileData.created_at = user.metadata?.creationTime || new Date().toISOString();
       }
+
+      await setDoc(userRef, profileData, { merge: true });
+
+      // Record audit log in user_actions
+      await addDoc(collection(db, 'user_actions'), {
+        user_id: user.uid,
+        action: actionType,
+        details: {
+          email: user.email,
+          provider: provider,
+          timestamp: new Date().toISOString()
+        },
+        created_at: new Date().toISOString()
+      });
     } catch (dbErr) {
-      console.warn('Could not sync user profile to Firestore (non-fatal):', dbErr);
+      console.warn('Firestore user record error (non-fatal):', dbErr);
     }
   };
 
@@ -75,9 +96,10 @@ export default function AuthModal({ onClose }) {
     try {
       if (mode === 'signup') {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await handleUserDoc(cred.user);
+        await recordUserInFirestore(cred.user, 'signup_email', 'password');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        await recordUserInFirestore(cred.user, 'login_email', 'password');
       }
       onClose();
     } catch (err) {
@@ -93,7 +115,7 @@ export default function AuthModal({ onClose }) {
     setLoading(true);
     try {
       const cred = await signInWithPopup(auth, googleProvider);
-      await handleUserDoc(cred.user);
+      await recordUserInFirestore(cred.user, 'login_google', 'google.com');
       onClose();
     } catch (err) {
       console.error('Google sign-in error:', err);

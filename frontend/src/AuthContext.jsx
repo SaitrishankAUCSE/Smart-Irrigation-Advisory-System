@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -10,14 +11,46 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Sync user profile and log in time to Firestore
+  const syncUserToFirestore = async (user) => {
+    if (!user) return;
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userRef);
+      
+      const userData = {
+        uid: user.uid,
+        email: user.email || '',
+        name: user.displayName || user.email?.split('@')[0] || 'Farmer',
+        photo_url: user.photoURL || null,
+        email_verified: user.emailVerified || false,
+        auth_provider: user.providerData?.[0]?.providerId || 'password',
+        last_login_at: new Date().toISOString(),
+        role: 'farmer'
+      };
+
+      if (!snap.exists()) {
+        userData.created_at = user.metadata?.creationTime || new Date().toISOString();
+      }
+
+      await setDoc(userRef, userData, { merge: true });
+    } catch (err) {
+      console.warn('Firestore user profile sync (non-fatal):', err);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setCurrentUser({
+        const userObj = {
           uid: user.uid,
           email: user.email,
-          name: user.displayName || user.email.split('@')[0],
-        });
+          name: user.displayName || user.email?.split('@')[0] || 'Farmer',
+          photo_url: user.photoURL || null,
+          role: 'farmer'
+        };
+        setCurrentUser(userObj);
+        await syncUserToFirestore(user);
       } else {
         setCurrentUser(null);
       }
@@ -30,6 +63,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await signOut(auth);
+      setCurrentUser(null);
     } catch (err) {
       console.error("Failed to sign out", err);
     }

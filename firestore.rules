@@ -20,29 +20,23 @@ service cloud.firestore {
     match /users/{userId} {
       // Allow read/write if the user is the owner
       allow read: if isOwner(userId);
-      // Allow create only if they set their role to farmer and don't overwrite existing
-      allow create: if isOwner(userId) && request.resource.data.role == "farmer";
-      // Allow update if they aren't changing their role
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
-      allow delete: if false; // Only admins or cloud functions can delete users
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
     }
 
     // 2. Fields Collection
     match /fields/{fieldId} {
       // Allow read/write if the user is the owner of the field
       allow read, update, delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      // Allow create if they set themselves as the owner
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       
       // 2a. Moisture Readings Subcollection
       match /moistureReadings/{readingId} {
-        // Allow access only if the user owns the parent field
         allow read, write: if isAuthenticated() && getFieldOwner(fieldId) == request.auth.uid;
       }
       
       // 2b. Irrigation Logs Subcollection
       match /irrigationLogs/{logId} {
-        // Allow access only if the user owns the parent field
         allow read, write: if isAuthenticated() && getFieldOwner(fieldId) == request.auth.uid;
       }
       
@@ -54,16 +48,15 @@ service cloud.firestore {
 
     // 3. Crop Stage Rules (Global config)
     match /cropStageRules/{ruleId} {
-      // Farmers can read, but never write
       allow read: if isAuthenticated();
-      allow write: if false; // Admin only via custom claims or admin SDK
+      allow write: if false;
     }
 
     // 4. User Actions Logs
     match /user_actions/{actionId} {
-      // Farmers can only write their own logs, and can't read others
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow read, update, delete: if false; // Only for backend processing
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow update, delete: if false;
     }
   }
 }
