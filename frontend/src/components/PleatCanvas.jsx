@@ -63,8 +63,8 @@ export default function PleatCanvas({ brandText = 'AgriSense' }) {
     // Build the brand wordmark on an offscreen canvas
     const mark = document.createElement('canvas');
     const size = s.narrow
-      ? Math.min(s.W * 0.215, s.H * 0.15)
-      : Math.min(s.W * 0.085, s.H * 0.22);
+      ? Math.min(s.W * 0.16, s.H * 0.12)
+      : Math.min(s.W * 0.065, s.H * 0.14);
     let m = mark.getContext('2d');
     m.font = `600 ${size}px 'Instrument Sans', system-ui, sans-serif`;
     s.MW = Math.ceil(m.measureText(brandText).width) + 8;
@@ -95,8 +95,8 @@ export default function PleatCanvas({ brandText = 'AgriSense' }) {
     const sw = s.MW / s.N;
     const dw = sw * spread;
     const totalW = dw * s.N;
-    const x0 = s.narrow ? (s.W - totalW) / 2 : s.W * 0.985 - totalW;
-    const y0 = s.narrow ? s.H * 0.60 - s.MH / 2 : s.H * 0.82 - s.MH / 2;
+    const x0 = s.narrow ? (s.W - totalW) / 2 : Math.max(s.W * 0.04, s.W * 0.95 - totalW);
+    const y0 = s.narrow ? s.H * 0.58 - s.MH / 2 : s.H * 0.72 - s.MH / 2;
 
     for (let i = 0; i < s.N; i++) {
       const dx = x0 + i * dw;

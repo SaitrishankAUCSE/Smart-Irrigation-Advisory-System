@@ -228,7 +228,7 @@ export default function SoilSimulator() {
     <div style={{ backgroundColor: 'var(--proof)', color: 'var(--sheet)', minHeight: '100vh', fontFamily: "'Instrument Sans', sans-serif" }}>
       
       {/* 1. HERO SECTION WITH ICONIC BROWN CURTAIN CANVAS */}
-      <section style={{ position: 'relative', height: '70vh', minHeight: '520px', overflow: 'hidden', background: 'var(--proof)' }}>
+      <section style={{ position: 'relative', height: '92vh', minHeight: '620px', overflow: 'hidden', background: 'var(--proof)' }}>
         <div style={{ position: 'absolute', inset: 0 }}>
           <PleatCanvas brandText="Bhoomi Matrix" />
         </div>
@@ -244,7 +244,7 @@ export default function SoilSimulator() {
           position: 'absolute', left: 'var(--gap)', top: '48%', transform: 'translateY(-50%)',
           maxWidth: '18ch', zIndex: 2, pointerEvents: 'none',
           fontFamily: "'Instrument Serif', serif",
-          fontSize: 'clamp(34px, 8.5vw, 138px)',
+          fontSize: 'clamp(34px, 9vw, 154px)',
           lineHeight: '.96', letterSpacing: '-.035em',
         }}>
           <span>Bhoomi</span>
@@ -271,14 +271,16 @@ export default function SoilSimulator() {
         </div>
       </section>
 
-      <div className="moire" />
-
       {/* 2. THE MAIN SCIENTIFIC LABORATORY COCKPIT */}
-      <section className="band wrap" data-reveal style={{ paddingTop: '3rem' }}>
-        <div className="head">
-          <span className="label">Dynamic Agro-Telemetry Simulation</span>
-          <h2>Adjust biological & climate controls in real time.</h2>
-          <p>
+      <section className="band wrap" data-reveal style={{ paddingTop: '4rem', paddingBottom: '4rem' }}>
+        <div className="head" style={{ borderBottom: '1px solid rgba(234, 232, 225, 0.1)', paddingBottom: '2rem' }}>
+          <span className="label" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--accent-text)', display: 'block', marginBottom: '0.5rem' }}>
+            Dynamic Agro-Telemetry Simulation
+          </span>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '3rem', margin: 0, fontWeight: 'normal' }}>
+            Adjust biological & climate controls in real time.
+          </h2>
+          <p style={{ color: 'var(--graphite)', fontSize: '0.95rem', maxWidth: '65ch', marginTop: '0.75rem', lineHeight: '1.6' }}>
             Simulate how variable root-zone moisture, solar irradiance, phenological crop coefficient (Kc), and incoming rainfall interact to generate optimal pump motor schedules.
           </p>
         </div>
