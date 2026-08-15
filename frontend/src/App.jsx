@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import Navbar from './components/Navbar';
+import VerticalBackRail from './components/VerticalBackRail';
 import Bhoomi from './pages/Bhoomi';
 import SoilSimulator from './pages/SoilSimulator';
 import FarmerDashboard from './pages/FarmerDashboard';
@@ -118,6 +119,9 @@ function App() {
 
         {/* Global Swipe to Go Back Gesture Listener */}
         <SwipeNavigationHandler />
+
+        {/* Sleek Vertical Scroller Back Rail (Left Side) */}
+        <VerticalBackRail />
 
         <Navbar />
         <main>
