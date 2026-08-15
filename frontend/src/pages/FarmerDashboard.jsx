@@ -4,6 +4,7 @@ import { useAuth } from '../AuthContext';
 import { getFields, addField, deleteField, logUserAction } from '../services/dataService';
 import { useReveal, useStagger } from '../hooks/useReveal';
 import PleatCanvas from '../components/PleatCanvas';
+import PoolCanvas from '../components/PoolCanvas';
 
 export default function FarmerDashboard() {
   const { currentUser } = useAuth();
@@ -13,6 +14,8 @@ export default function FarmerDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCropFilter, setSelectedCropFilter] = useState('All');
   const [deletingId, setDeletingId] = useState(null);
+  const [openIncluded, setOpenIncluded] = useState(null);
+  const [openFaq, setOpenFaq] = useState(null);
 
   const [newField, setNewField] = useState({
     name: '', crop_type: 'Rice', area_acres: 1.0, current_growth_stage: 'Vegetative', soil_type: 'Loamy Soil'
@@ -327,12 +330,103 @@ export default function FarmerDashboard() {
         </form>
       </section>
 
-      {/* 6. FOOTER */}
-      <footer className="site-foot wrap" style={{ padding: '4rem 0 2rem 0', borderTop: '1px solid var(--graphite)', marginTop: '4rem' }}>
-        <div className="foot-tail" style={{ display: 'flex', justifyContent: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--graphite)' }}>
-          AgriSense · Quantum Coders · {new Date().getFullYear()}
+      {/* 5A. ADVISORY METRICS SECTION */}
+      <div className="moire" />
+      <section className="voice wrap" data-reveal>
+        <div className="head">
+          <span className="label" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--graphite)', display: 'block', marginBottom: '0.5rem' }}>Metrics</span>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '3rem', margin: 0, fontWeight: 'normal' }}>Key advisory datapoints.</h2>
         </div>
-      </footer>
+        <div className="face-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', marginTop: '3rem' }}>
+          {['Soil Moisture', 'Evapotranspiration', 'Crop Growth Stage', 'Climate Data'].map((metric, idx) => (
+            <div key={idx} className="face" style={{ borderTop: '1px solid var(--graphite)', paddingTop: '1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '1.25rem' }}>
+              {metric}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5B. INCLUDED FEATURES SECTION */}
+      <div className="moire" />
+      <section className="band wrap" data-reveal>
+        <div className="head">
+          <span className="label" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: '#ff4d4d', display: 'block', marginBottom: '0.5rem' }}>Included</span>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '3rem', margin: 0, fontWeight: 'normal', color: '#ff4d4d' }}>Included in AgriSense</h2>
+        </div>
+        <div className="panels" style={{ marginTop: '3rem' }}>
+          {['Precision FAO-56 Modeling', 'Multi-language Voice Synthesis', 'Real-time Plot Tracking', 'Offline-first Storage', 'Water Conservation Analytics'].map((panel, idx) => (
+            <div key={idx} className="panel" style={{ borderBottom: '1px solid #ff4d4d' }}>
+              <button 
+                onClick={() => setOpenIncluded(openIncluded === idx ? null : idx)} 
+                style={{ background: 'transparent', border: 'none', color: '#ff4d4d', width: '100%', textAlign: 'left', padding: '1.5rem 0', fontFamily: "'DM Mono', monospace", fontSize: '1.25rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+              >
+                <span>{idx + 1}. {panel}</span>
+                <span>{openIncluded === idx ? '−' : '+'}</span>
+              </button>
+              {openIncluded === idx && (
+                <div style={{ padding: '0 0 1.5rem 0', color: '#ff4d4d', opacity: 0.8, fontFamily: "'Instrument Sans', sans-serif" }}>
+                  Seamless integration of {panel.toLowerCase()} to optimize your farming yield.
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5C. PROCESS SECTION */}
+      <div className="moire" />
+      <section className="work wrap" data-reveal style={{ background: 'var(--sheet)', color: 'var(--proof)', padding: '4rem var(--gap)', margin: '4rem 0' }}>
+        <div className="head">
+          <span className="label" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--graphite)', display: 'block', marginBottom: '0.5rem' }}>Process</span>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '3rem', margin: 0, fontWeight: 'normal' }}>Five steps, and you decide at the third.</h2>
+        </div>
+        <div className="rows" style={{ marginTop: '3rem' }}>
+          {['Register your plot', 'Log moisture readings', 'Receive AI advisory', 'Take action', 'Track usage'].map((step, idx) => (
+            <div key={idx} className="row" style={{ padding: '2rem 0', borderBottom: '1px solid var(--graphite)', display: 'flex', gap: '3rem', alignItems: 'center' }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '1.25rem', color: 'var(--graphite)' }}>0{idx + 1}</span>
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: '3rem' }}>{step}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5D. FAQ SECTION */}
+      <section className="band wrap" data-reveal style={{ marginBottom: '4rem' }}>
+        <div className="head">
+          <span className="label" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: 'var(--graphite)', display: 'block', marginBottom: '0.5rem' }}>Questions</span>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '3rem', margin: 0, fontWeight: 'normal' }}>Before you plant.</h2>
+        </div>
+        <div className="panels" style={{ marginTop: '3rem' }}>
+          {[
+            { q: "What crops are supported?", a: "We support a wide variety of crops including Rice, Maize, Wheat, Cotton, and Sugarcane." },
+            { q: "How is evapotranspiration calculated?", a: "We use the FAO-56 Penman-Monteith method combined with real-time local climate data." },
+            { q: "Can I use it offline?", a: "Yes, our offline-first storage ensures you can log readings even without internet access." }
+          ].map((faq, idx) => (
+            <div key={idx} className="panel" style={{ borderBottom: '1px solid var(--graphite)' }}>
+              <button 
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)} 
+                style={{ background: 'transparent', border: 'none', color: 'var(--sheet)', width: '100%', textAlign: 'left', padding: '1.5rem 0', fontFamily: "'DM Mono', monospace", fontSize: '1.25rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+              >
+                <span>{faq.q}</span>
+                <span>{openFaq === idx ? '−' : '+'}</span>
+              </button>
+              {openFaq === idx && (
+                <div style={{ padding: '0 0 1.5rem 0', color: 'var(--sheet)', opacity: 0.8, fontFamily: "'Instrument Sans', sans-serif" }}>
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 6. FOOTER / POOL */}
+      <div className="pool-wrap" style={{ position: 'relative', height: '60vh', overflow: 'hidden' }}>
+        <PoolCanvas brandText="AgriSense" />
+        <footer style={{ position: 'absolute', bottom: '2rem', left: '0', right: '0', display: 'flex', justifyContent: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--graphite)', zIndex: 10 }}>
+          AgriSense · Quantum Coders · {new Date().getFullYear()}
+        </footer>
+      </div>
     </div>
   );
 }
