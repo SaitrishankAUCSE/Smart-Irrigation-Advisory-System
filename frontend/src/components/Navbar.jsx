@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Leaf, LogOut, X, AlertTriangle, ArrowLeft, Sparkles } from 'lucide-react';
+import { Leaf, LogOut, AlertTriangle, Sparkles } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import AuthModal from './AuthModal';
 
@@ -13,8 +13,6 @@ export default function Navbar() {
   const [showAuth, setShowAuth] = useState(false);
   const [showConfirmSignOut, setShowConfirmSignOut] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-
-  const isNotHome = location.pathname !== '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,14 +41,6 @@ export default function Navbar() {
     }
   };
 
-  const handleGoBack = () => {
-    if (window.history.length > 2) {
-      navigate(-1);
-    } else {
-      navigate('/');
-    }
-  };
-
   return (
     <>
       <nav 
@@ -72,67 +62,25 @@ export default function Navbar() {
           transition: 'all 0.4s cubic-bezier(.2, .7, .2, 1)'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {isNotHome && (
-            <button
-              type="button"
-              onClick={handleGoBack}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                background: 'rgba(234, 232, 225, 0.05)',
-                border: '1px solid rgba(234, 232, 225, 0.16)',
-                color: 'var(--sheet)',
-                padding: '4px 10px',
-                borderRadius: '100px',
-                cursor: 'pointer',
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '11px',
-                letterSpacing: '0.03em',
-                transition: 'all 0.25s cubic-bezier(.2, .7, .2, 1)',
-                backdropFilter: 'blur(8px)',
-                lineHeight: 1
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(45, 122, 79, 0.15)';
-                e.currentTarget.style.borderColor = 'var(--accent)';
-                e.currentTarget.style.transform = 'translateX(-2px)';
-                e.currentTarget.style.color = '#fff';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(234, 232, 225, 0.05)';
-                e.currentTarget.style.borderColor = 'rgba(234, 232, 225, 0.16)';
-                e.currentTarget.style.transform = 'translateX(0)';
-                e.currentTarget.style.color = 'var(--sheet)';
-              }}
-              title="Go to previous page"
-            >
-              <ArrowLeft size={12} strokeWidth={2.2} />
-              <span>Back</span>
-            </button>
-          )}
-
-          <Link 
-            to="/" 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              textDecoration: 'none',
-              color: 'inherit'
-            }}
-          >
-            <Leaf size={15} color="#2D7A4F" strokeWidth={2} />
-            <span style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>AgriSense</span>
-          </Link>
-        </div>
+        <Link 
+          to={currentUser ? "/bhoomi" : "/"} 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            textDecoration: 'none',
+            color: 'inherit'
+          }}
+        >
+          <Leaf size={15} color="#2D7A4F" strokeWidth={2} />
+          <span style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>AgriSense</span>
+        </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
           {currentUser ? (
             <>
               <span style={{ color: '#8A877E', fontFamily: "'DM Mono', monospace", fontSize: '12px' }}>{userName}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '22px' }}>
                 <Link 
                   to="/bhoomi"
                   style={{
@@ -200,7 +148,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showAuth && !currentUser && <AuthModal onClose={() => setShowAuth(false)} />}
 
       {/* SIGN OUT CONFIRMATION MODAL */}
       {showConfirmSignOut && (
