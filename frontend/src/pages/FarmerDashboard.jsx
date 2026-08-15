@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { getFields, addField, deleteField, logUserAction } from '../services/dataService';
 import { useReveal, useStagger } from '../hooks/useReveal';
+import PleatCanvas from '../components/PleatCanvas';
 
 export default function FarmerDashboard() {
   const { currentUser } = useAuth();
@@ -91,34 +92,41 @@ export default function FarmerDashboard() {
 
   return (
     <div style={{ backgroundColor: 'var(--proof)', color: 'var(--sheet)', minHeight: '100vh', fontFamily: "'Instrument Sans', sans-serif" }}>
-      {/* 1. HERO SECTION */}
-      <section style={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.9rem', color: 'var(--graphite)' }}>
-            Welcome, {currentUser.name}
-          </div>
-          <button 
-            onClick={() => {
-              const el = document.getElementById('add-field-section');
-              el && el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="btn-ghost"
-            style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem' }}
-          >
-            + New Plot
-          </button>
-        </div>
-        
-        <div>
-          <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(34px, 11vw, 120px)', lineHeight: '1.1', margin: '0 0 1rem 0', fontWeight: 'normal' }}>
-            Precision irrigation <br /> for every acre.
-          </h1>
-          <p style={{ color: 'var(--graphite)', fontSize: '1.25rem', margin: 0 }}>
-            FAO-56 evapotranspiration model · Real-time soil moisture advisory
-          </p>
+      {/* 1. HERO SECTION — Pleat canvas with overlaid statement */}
+      <section style={{ position: 'relative', height: '100vh', overflow: 'hidden', background: 'var(--proof)' }}>
+        {/* Animated fabric-fold canvas */}
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <PleatCanvas brandText="AgriSense" />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--graphite)', textTransform: 'uppercase' }}>
+        {/* Left-side text scrim gradient for readability */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1,
+          background: 'linear-gradient(90deg, rgba(13,13,12,.58) 0%, rgba(13,13,12,.52) 46%, rgba(13,13,12,.30) 72%, rgba(13,13,12,0) 92%)'
+        }} />
+
+        {/* Statement text overlay */}
+        <div style={{
+          position: 'absolute', left: 'var(--gap)', top: '46%', transform: 'translateY(-50%)',
+          maxWidth: '15ch', zIndex: 2, pointerEvents: 'none',
+          fontFamily: "'Instrument Serif', serif",
+          fontSize: 'clamp(34px, 11vw, 186px)',
+          lineHeight: '.96', letterSpacing: '-.04em',
+        }}>
+          <span>Precision irrigation</span>
+          <em style={{ fontStyle: 'normal', color: 'inherit', opacity: '.72', display: 'block' }}>
+            for every acre.
+          </em>
+        </div>
+
+        {/* Bottom cues */}
+        <div style={{
+          position: 'absolute', zIndex: 2,
+          left: 'var(--gap)', right: 'var(--gap)', bottom: '22px',
+          display: 'flex', justifyContent: 'space-between', gap: '20px',
+          fontSize: 'var(--chrome)', color: 'var(--graphite)', pointerEvents: 'none',
+          fontFamily: "'DM Mono', monospace", textTransform: 'uppercase',
+        }}>
           <span>AgriSense · Quantum Coders</span>
           <span>{new Date().getFullYear()} Season</span>
         </div>
