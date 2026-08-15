@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './AuthContext';
 import Navbar from './components/Navbar';
 import FarmerDashboard from './pages/FarmerDashboard';
+import LandingPage from './pages/LandingPage';
 import FieldDetail from './pages/FieldDetail';
 import WaterUsageDashboard from './pages/WaterUsageDashboard';
 
@@ -16,10 +17,11 @@ function App() {
         <Navbar />
         <main>
           <Routes>
-            <Route path="/" element={<FarmerDashboard />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<FarmerDashboard />} />
             <Route path="/field/:id" element={<FieldDetail />} />
             <Route path="/field/:id/analytics" element={<WaterUsageDashboard />} />
-            <Route path="*" element={<FarmerDashboard />} />
+            <Route path="*" element={<LandingPage />} />
           </Routes>
         </main>
       </Router>
