@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Leaf, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Leaf, LogOut, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import AuthModal from './AuthModal';
 
 export default function Navbar() {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
   const userName = currentUser?.name;
   const [isScrimVisible, setIsScrimVisible] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showConfirmSignOut, setShowConfirmSignOut] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,9 +26,18 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSignOut = () => {
-    localStorage.removeItem('agrisense_username');
-    window.location.reload();
+  const confirmSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await logout();
+      localStorage.removeItem('agrisense_username');
+      setShowConfirmSignOut(false);
+      navigate('/');
+    } catch (err) {
+      console.error('Sign out error:', err);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -66,7 +78,7 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
           {currentUser ? (
             <>
-              <span style={{ color: '#8A877E' }}>{userName}</span>
+              <span style={{ color: '#8A877E', fontFamily: "'DM Mono', monospace", fontSize: '12px' }}>{userName}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
                 <Link 
                   to="/dashboard"
@@ -83,7 +95,7 @@ export default function Navbar() {
                 </Link>
                 
                 <button 
-                  onClick={handleSignOut}
+                  onClick={() => setShowConfirmSignOut(true)}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -128,6 +140,126 @@ export default function Navbar() {
       </nav>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+
+      {/* SIGN OUT CONFIRMATION MODAL */}
+      {showConfirmSignOut && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(13,13,12,0.85)',
+            backdropFilter: 'blur(12px)',
+            fontFamily: "'Instrument Sans', sans-serif",
+            padding: '16px'
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirmSignOut(false); }}
+        >
+          <div 
+            className="grain" 
+            style={{ position: 'absolute', inset: 0, opacity: 0.1, pointerEvents: 'none' }}
+          />
+
+          <div 
+            style={{
+              position: 'relative',
+              background: 'var(--proof)',
+              border: '1px solid rgba(234, 232, 225, 0.12)',
+              padding: '2.25rem 2rem',
+              width: '100%',
+              maxWidth: '380px',
+              color: 'var(--sheet)',
+              borderRadius: '6px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '44px',
+              height: '44px',
+              borderRadius: '50%',
+              background: 'rgba(255, 77, 77, 0.1)',
+              color: '#ff6b6b',
+              marginBottom: '1.25rem'
+            }}>
+              <AlertTriangle size={22} />
+            </div>
+
+            <h3 style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontSize: '1.85rem',
+              margin: '0 0 0.5rem 0',
+              fontWeight: 'normal',
+              letterSpacing: '-0.02em'
+            }}>
+              Sign Out?
+            </h3>
+
+            <p style={{
+              color: 'var(--graphite)',
+              fontSize: '0.85rem',
+              margin: '0 0 1.75rem 0',
+              lineHeight: 1.45
+            }}>
+              Are you sure you want to sign out of <strong style={{ color: 'var(--sheet)' }}>{userName || 'your account'}</strong>?
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setShowConfirmSignOut(false)}
+                disabled={isSigningOut}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: '1px solid rgba(234, 232, 225, 0.16)',
+                  color: 'var(--sheet)',
+                  padding: '0.75rem',
+                  borderRadius: '3px',
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '0.82rem',
+                  cursor: isSigningOut ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmSignOut}
+                disabled={isSigningOut}
+                style={{
+                  flex: 1,
+                  background: '#ff4d4d',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '0.75rem',
+                  borderRadius: '3px',
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: isSigningOut ? 'not-allowed' : 'pointer',
+                  transition: 'opacity 0.2s',
+                  opacity: isSigningOut ? 0.7 : 1
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
+              >
+                {isSigningOut ? 'Signing out...' : 'Yes, Sign Out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
