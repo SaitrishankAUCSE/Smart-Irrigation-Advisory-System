@@ -197,13 +197,81 @@ export default function Bhoomi() {
           </em>
         </div>
 
-        {/* Floating Quick Action Hub */}
+        {/* ATTRACTIVE CENTER ACTION BUTTON WITH CURLY ARROW */}
         <div style={{
-          position: 'absolute', right: 'var(--gap)', top: '48%', transform: 'translateY(-50%)',
-          zIndex: 3, maxWidth: '380px', width: '100%',
-          display: 'none',
-        }} className="desktop-hud">
-          {/* Will show on larger viewports */}
+          position: 'absolute',
+          right: 'clamp(20px, 10vw, 140px)',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          {/* Curly Arrow Indicator & Label */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', transform: 'rotate(-5deg)' }}>
+            <span style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontStyle: 'italic',
+              fontSize: '1.45rem',
+              color: '#4EC97A',
+              letterSpacing: '0.02em',
+              textShadow: '0 0 20px rgba(78, 201, 122, 0.45)'
+            }}>
+              Get Started
+            </span>
+            <svg width="48" height="38" viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 10 C 24 2, 48 8, 42 26 C 38 38, 20 36, 26 24 C 30 16, 48 24, 52 40" stroke="#4EC97A" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="3 3" />
+              <path d="M44 34 L 52 40 L 42 43" stroke="#4EC97A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          {/* Main Action Button */}
+          <button
+            onClick={() => {
+              setActiveTab('simulator');
+              const el = document.getElementById('bhoomi-tabs');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '12px',
+              background: 'rgba(234, 232, 225, 0.08)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(78, 201, 122, 0.6)',
+              color: 'var(--sheet)',
+              padding: '16px 28px',
+              borderRadius: '100px',
+              cursor: 'pointer',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '13px',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 25px rgba(78, 201, 122, 0.25)',
+              transition: 'all 0.3s cubic-bezier(.2, .7, .2, 1)'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'var(--sheet)';
+              e.currentTarget.style.color = 'var(--proof)';
+              e.currentTarget.style.borderColor = 'var(--sheet)';
+              e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)';
+              e.currentTarget.style.boxShadow = '0 15px 35px -5px rgba(0, 0, 0, 0.8), 0 0 35px rgba(78, 201, 122, 0.5)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(234, 232, 225, 0.08)';
+              e.currentTarget.style.color = 'var(--sheet)';
+              e.currentTarget.style.borderColor = 'rgba(78, 201, 122, 0.6)';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 25px rgba(78, 201, 122, 0.25)';
+            }}
+          >
+            <Sparkles size={16} color="#4EC97A" />
+            <span>Launch Soil Simulator</span>
+            <ArrowRight size={15} />
+          </button>
         </div>
 
         {/* Bottom Season & Status Strip */}
@@ -225,7 +293,7 @@ export default function Bhoomi() {
       </section>
 
       {/* 2. SANCTUARY NAVIGATION TABS */}
-      <div style={{
+      <div id="bhoomi-tabs" style={{
         position: 'sticky', top: '60px', zIndex: 40,
         background: 'rgba(13,13,12,0.92)', backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(234,232,225,0.12)',
