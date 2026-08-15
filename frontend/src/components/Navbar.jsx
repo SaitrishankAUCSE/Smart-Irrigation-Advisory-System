@@ -76,74 +76,30 @@ export default function Navbar() {
           <span style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>AgriSense</span>
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           {currentUser ? (
             <>
               <span style={{ color: '#8A877E', fontFamily: "'DM Mono', monospace", fontSize: '12px' }}>{userName}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '22px' }}>
-                <Link 
-                  to="/bhoomi"
-                  style={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    opacity: (location.pathname === '/bhoomi' || location.pathname === '/dashboard') ? 1 : 0.62,
-                    borderBottom: (location.pathname === '/bhoomi' || location.pathname === '/dashboard') ? '1px solid var(--accent)' : 'none',
-                    paddingBottom: '2px',
-                    transition: 'all 0.3s cubic-bezier(.2, .7, .2, 1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                  onMouseOut={(e) => {
-                    if (location.pathname !== '/bhoomi' && location.pathname !== '/dashboard') e.currentTarget.style.opacity = 0.62;
-                  }}
-                >
-                  <Sparkles size={13} color="#4EC97A" />
-                  <span>Bhoomi Matrix</span>
-                </Link>
-
-                <Link 
-                  to="/simulator"
-                  style={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    opacity: location.pathname === '/simulator' ? 1 : 0.62,
-                    borderBottom: location.pathname === '/simulator' ? '1px solid var(--accent)' : 'none',
-                    paddingBottom: '2px',
-                    transition: 'all 0.3s cubic-bezier(.2, .7, .2, 1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                  onMouseOut={(e) => {
-                    if (location.pathname !== '/simulator') e.currentTarget.style.opacity = 0.62;
-                  }}
-                >
-                  <span>Soil Simulator</span>
-                </Link>
-                
-                <button 
-                  onClick={() => setShowConfirmSignOut(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                    color: 'inherit',
-                    opacity: 0.62,
-                    display: 'flex',
-                    alignItems: 'center',
-                    transition: 'opacity 0.3s cubic-bezier(.2, .7, .2, 1)'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                  onMouseOut={(e) => e.currentTarget.style.opacity = 0.62}
-                  title="Sign Out"
-                >
-                  <LogOut size={15} />
-                </button>
-              </div>
+              
+              <button 
+                onClick={() => setShowConfirmSignOut(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px',
+                  cursor: 'pointer',
+                  color: 'inherit',
+                  opacity: 0.62,
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'opacity 0.3s cubic-bezier(.2, .7, .2, 1)'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                onMouseOut={(e) => e.currentTarget.style.opacity = 0.62}
+                title="Sign Out"
+              >
+                <LogOut size={16} />
+              </button>
             </>
           ) : (
             <button 
