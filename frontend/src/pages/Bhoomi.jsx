@@ -228,12 +228,8 @@ export default function Bhoomi() {
           </div>
 
           {/* Main Action Button */}
-          <button
-            onClick={() => {
-              setActiveTab('simulator');
-              const el = document.getElementById('bhoomi-tabs');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
+          <Link
+            to="/simulator"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -244,7 +240,7 @@ export default function Bhoomi() {
               color: 'var(--sheet)',
               padding: '16px 28px',
               borderRadius: '100px',
-              cursor: 'pointer',
+              textDecoration: 'none',
               fontFamily: "'DM Mono', monospace",
               fontSize: '13px',
               fontWeight: 600,
@@ -271,7 +267,7 @@ export default function Bhoomi() {
             <Sparkles size={16} color="#4EC97A" />
             <span>Launch Soil Simulator</span>
             <ArrowRight size={15} />
-          </button>
+          </Link>
         </div>
 
         {/* Bottom Season & Status Strip */}

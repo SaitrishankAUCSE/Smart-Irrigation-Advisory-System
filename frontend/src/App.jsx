@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 import { AuthProvider, useAuth } from './AuthContext';
 import Navbar from './components/Navbar';
 import Bhoomi from './pages/Bhoomi';
+import SoilSimulator from './pages/SoilSimulator';
 import FarmerDashboard from './pages/FarmerDashboard';
 import LandingPage from './pages/LandingPage';
 import FieldDetail from './pages/FieldDetail';
@@ -29,10 +30,8 @@ function SwipeNavigationHandler() {
       const deltaX = touchEndX - touchStartX;
       const deltaY = touchEndY - touchStartY;
 
-      // Detect left-to-right swipe (standard back gesture) or right-to-left
-      // Swipe distance > 75px, vertical deviation < 60px
+      // Detect left-to-right swipe (standard back gesture)
       if (deltaX > 75 && Math.abs(deltaY) < 60) {
-        // If logged in and already on /bhoomi, do not go back to unauthenticated pages
         if (currentUser && (location.pathname === '/bhoomi' || location.pathname === '/')) {
           return;
         }
@@ -69,6 +68,16 @@ function AppRoutes() {
       <Route 
         path="/bhoomi" 
         element={currentUser ? <Bhoomi /> : <Navigate to="/" replace />} 
+      />
+
+      <Route 
+        path="/simulator" 
+        element={currentUser ? <SoilSimulator /> : <Navigate to="/" replace />} 
+      />
+
+      <Route 
+        path="/soil-simulator" 
+        element={<Navigate to="/simulator" replace />} 
       />
 
       <Route 

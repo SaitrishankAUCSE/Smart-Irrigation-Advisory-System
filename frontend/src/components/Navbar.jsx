@@ -102,6 +102,27 @@ export default function Navbar() {
                   <Sparkles size={13} color="#4EC97A" />
                   <span>Bhoomi Matrix</span>
                 </Link>
+
+                <Link 
+                  to="/simulator"
+                  style={{
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    opacity: location.pathname === '/simulator' ? 1 : 0.62,
+                    borderBottom: location.pathname === '/simulator' ? '1px solid var(--accent)' : 'none',
+                    paddingBottom: '2px',
+                    transition: 'all 0.3s cubic-bezier(.2, .7, .2, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                  onMouseOut={(e) => {
+                    if (location.pathname !== '/simulator') e.currentTarget.style.opacity = 0.62;
+                  }}
+                >
+                  <span>Soil Simulator</span>
+                </Link>
                 
                 <button 
                   onClick={() => setShowConfirmSignOut(true)}
