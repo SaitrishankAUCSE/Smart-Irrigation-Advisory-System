@@ -1,38 +1,69 @@
-rules_version = "2";
+rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Check if user is authenticated
+
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Check if user is admin via custom claim
-    function isAdmin() {
-      return isAuthenticated() && request.auth.token.role == "admin";
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
-    match /users/{uid} {
-      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    function getFieldOwner(fieldId) {
+      return get(/databases/$(database)/documents/fields/$(fieldId)).data.user_id;
     }
 
-    match /crop_stage_rules/{ruleId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+    // 1. Users Collection
+    match /users/{userId} {
+      // Allow read/write if the user is the owner
+      allow read: if isOwner(userId);
+      // Allow create only if they set their role to farmer and don't overwrite existing
+      allow create: if isOwner(userId) && request.resource.data.role == "farmer";
+      // Allow update if they aren't changing their role
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+      allow delete: if false; // Only admins or cloud functions can delete users
     }
 
+    // 2. Fields Collection
     match /fields/{fieldId} {
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      // Allow read/write if the user is the owner of the field
       allow read, update, delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      // Allow create if they set themselves as the owner
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       
-      // Subcollections under fields
-      match /{subcollection}/{docId} {
-        allow read, write: if isAuthenticated() && get(/databases/$(database)/documents/fields/$(fieldId)).data.user_id == request.auth.uid;
+      // 2a. Moisture Readings Subcollection
+      match /moistureReadings/{readingId} {
+        // Allow access only if the user owns the parent field
+        allow read, write: if isAuthenticated() && getFieldOwner(fieldId) == request.auth.uid;
+      }
+      
+      // 2b. Irrigation Logs Subcollection
+      match /irrigationLogs/{logId} {
+        // Allow access only if the user owns the parent field
+        allow read, write: if isAuthenticated() && getFieldOwner(fieldId) == request.auth.uid;
+      }
+      
+      // 2c. Weather Data Subcollection
+      match /weatherData/{weatherId} {
+        allow read, write: if isAuthenticated() && getFieldOwner(fieldId) == request.auth.uid;
       }
     }
-    
-    // Other collections like weather_data, moisture_readings if they are flat (but prompt said subcollections)
-    // The previous implementation used flat collections with field_id property!
-    // I need to check how they were implemented previously.
+
+    // 3. Crop Stage Rules (Global config)
+    match /cropStageRules/{ruleId} {
+      // Farmers can read, but never write
+      allow read: if isAuthenticated();
+      allow write: if false; // Admin only via custom claims or admin SDK
+    }
+
+    // 4. User Actions Logs
+    match /user_actions/{actionId} {
+      // Farmers can only write their own logs, and can't read others
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow read, update, delete: if false; // Only for backend processing
+    }
   }
 }
