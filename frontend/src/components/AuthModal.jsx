@@ -7,16 +7,23 @@ import { X, AlertCircle } from 'lucide-react';
 export default function AuthModal({ onClose }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mode, setMode] = useState('signup'); // 'login' or 'signup'
+  const [mode, setMode] = useState('signup');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Helper to safely format Firebase errors
   const formatError = (errMessage) => {
+    if (!errMessage) return 'Authentication failed. Please try again.';
     if (errMessage.includes('auth/user-not-found') || errMessage.includes('auth/invalid-credential')) return 'Invalid email or password.';
     if (errMessage.includes('auth/email-already-in-use')) return 'An account with this email already exists.';
     if (errMessage.includes('auth/weak-password')) return 'Password should be at least 6 characters.';
-    return errMessage.replace('Firebase: ', '').replace(/\([^)]+\)/, '').trim() || 'Authentication failed. Please try again.';
+    if (errMessage.includes('auth/operation-not-allowed')) return 'This sign-in method is not enabled in Firebase console.';
+    
+    // Clean up generic firebase errors
+    let cleaned = errMessage.replace('Firebase:', '').replace(/\([^)]+\)/g, '').trim();
+    if (cleaned.toLowerCase() === 'error' || cleaned.toLowerCase() === 'error .') {
+      return 'Authentication failed. Please check your credentials.';
+    }
+    return cleaned || 'Authentication failed. Please try again.';
   };
 
   const handleUserDoc = async (user) => {
@@ -61,7 +68,7 @@ export default function AuthModal({ onClose }) {
       onClose();
     } catch (err) {
       console.error(err);
-      setError('Google sign-in failed or was cancelled.');
+      setError(formatError(err.message));
     } finally {
       setLoading(false);
     }
@@ -74,7 +81,8 @@ export default function AuthModal({ onClose }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'rgba(13,13,12,0.85)', backdropFilter: 'blur(12px)',
         fontFamily: "'Instrument Sans', sans-serif",
-        padding: '20px'
+        padding: '20px',
+        overflowY: 'auto'
       }}
     >
       <div 
@@ -87,18 +95,20 @@ export default function AuthModal({ onClose }) {
           position: 'relative',
           background: 'var(--proof)',
           border: '1px solid rgba(234, 232, 225, 0.1)',
-          padding: '3.5rem 3rem',
+          padding: '2.5rem 2rem',
           width: '100%',
           maxWidth: '440px',
           color: 'var(--sheet)',
           borderRadius: '8px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          maxHeight: '90vh',
+          overflowY: 'auto'
         }}
       >
         <button 
           onClick={onClose}
           style={{
-            position: 'absolute', top: '1.5rem', right: '1.5rem',
+            position: 'absolute', top: '1rem', right: '1rem',
             background: 'transparent', border: 'none', color: 'var(--graphite)',
             cursor: 'pointer', transition: 'color 0.2s', padding: '8px'
           }}
@@ -108,11 +118,11 @@ export default function AuthModal({ onClose }) {
           <X size={20} />
         </button>
 
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '2.75rem', margin: '0 0 0.5rem 0', fontWeight: 'normal', letterSpacing: '-0.02em' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem', marginTop: '1rem' }}>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: '2.5rem', margin: '0 0 0.5rem 0', fontWeight: 'normal', letterSpacing: '-0.02em' }}>
             {mode === 'signup' ? 'Get Started' : 'Welcome Back'}
           </h2>
-          <p style={{ color: 'var(--graphite)', fontSize: '0.95rem', margin: 0 }}>
+          <p style={{ color: 'var(--graphite)', fontSize: '0.9rem', margin: 0 }}>
             {mode === 'signup' 
               ? 'Create a secure account to access your dashboard.'
               : 'Sign in to access your dashboard.'}
@@ -124,14 +134,14 @@ export default function AuthModal({ onClose }) {
             display: 'flex', alignItems: 'center', gap: '12px',
             background: 'rgba(255, 77, 77, 0.08)', border: '1px solid rgba(255, 77, 77, 0.3)', 
             color: '#ff4d4d', padding: '1rem', borderRadius: '6px',
-            marginBottom: '2rem', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace" 
+            marginBottom: '1.5rem', fontSize: '0.85rem', fontFamily: "'DM Mono', monospace" 
           }}>
             <AlertCircle size={16} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Email Address
@@ -141,7 +151,7 @@ export default function AuthModal({ onClose }) {
               required 
               autoFocus
               className="input-dark"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--sheet)', padding: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', transition: 'border-color 0.2s' }}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--sheet)', padding: '0.875rem', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', transition: 'border-color 0.2s' }}
               value={email} 
               onChange={e => setEmail(e.target.value)} 
               placeholder="farmer@example.com"
@@ -156,7 +166,7 @@ export default function AuthModal({ onClose }) {
               type="password" 
               required 
               className="input-dark"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--sheet)', padding: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', transition: 'border-color 0.2s' }}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--sheet)', padding: '0.875rem', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', transition: 'border-color 0.2s' }}
               value={password} 
               onChange={e => setPassword(e.target.value)} 
               placeholder="••••••••"
@@ -168,13 +178,13 @@ export default function AuthModal({ onClose }) {
             type="submit" 
             disabled={loading}
             className="btn-accent"
-            style={{ background: 'var(--sheet)', color: 'var(--proof)', border: 'none', padding: '1.1rem', borderRadius: '4px', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '0.5rem', opacity: loading ? 0.7 : 1, transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+            style={{ background: 'var(--sheet)', color: 'var(--proof)', border: 'none', padding: '1rem', borderRadius: '4px', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '0.5rem', opacity: loading ? 0.7 : 1, transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '0.05em' }}
           >
             {loading ? 'Processing...' : (mode === 'signup' ? 'Create Account' : 'Log In')}
           </button>
         </form>
 
-        <div style={{ position: 'relative', margin: '2.5rem 0', textAlign: 'center' }}>
+        <div style={{ position: 'relative', margin: '2rem 0', textAlign: 'center' }}>
           <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 0 }} />
           <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'var(--proof)', padding: '0 1rem', color: 'var(--graphite)', fontSize: '0.75rem', fontFamily: "'DM Mono', monospace" }}>OR</span>
         </div>
@@ -182,7 +192,7 @@ export default function AuthModal({ onClose }) {
         <button 
           onClick={handleGoogleSignIn}
           disabled={loading}
-          style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--sheet)', padding: '1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s' }}
+          style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--sheet)', padding: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.9rem', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s' }}
           onMouseOver={e => !loading && (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
           onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
         >
@@ -195,7 +205,7 @@ export default function AuthModal({ onClose }) {
           Continue with Google
         </button>
 
-        <div style={{ marginTop: '2.5rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--graphite)' }}>
+        <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--graphite)' }}>
           {mode === 'signup' ? (
             <>
               Already have an account?{' '}
