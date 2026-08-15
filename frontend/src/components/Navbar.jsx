@@ -134,21 +134,25 @@ export default function Navbar() {
               <span style={{ color: '#8A877E', fontFamily: "'DM Mono', monospace", fontSize: '12px' }}>{userName}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
                 <Link 
-                  to="/dashboard"
+                  to="/bhoomi"
                   style={{
                     textDecoration: 'none',
                     color: 'inherit',
-                    opacity: location.pathname === '/dashboard' ? 1 : 0.62,
-                    borderBottom: location.pathname === '/dashboard' ? '1px solid var(--accent)' : 'none',
+                    opacity: (location.pathname === '/bhoomi' || location.pathname === '/dashboard') ? 1 : 0.62,
+                    borderBottom: (location.pathname === '/bhoomi' || location.pathname === '/dashboard') ? '1px solid var(--accent)' : 'none',
                     paddingBottom: '2px',
-                    transition: 'all 0.3s cubic-bezier(.2, .7, .2, 1)'
+                    transition: 'all 0.3s cubic-bezier(.2, .7, .2, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   }}
                   onMouseOver={(e) => e.currentTarget.style.opacity = 1}
                   onMouseOut={(e) => {
-                    if (location.pathname !== '/dashboard') e.currentTarget.style.opacity = 0.62;
+                    if (location.pathname !== '/bhoomi' && location.pathname !== '/dashboard') e.currentTarget.style.opacity = 0.62;
                   }}
                 >
-                  Dashboard
+                  <Sparkles size={13} color="#4EC97A" />
+                  <span>Bhoomi Matrix</span>
                 </Link>
                 
                 <button 

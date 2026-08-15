@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './AuthContext';
 import Navbar from './components/Navbar';
+import Bhoomi from './pages/Bhoomi';
 import FarmerDashboard from './pages/FarmerDashboard';
 import LandingPage from './pages/LandingPage';
 import FieldDetail from './pages/FieldDetail';
@@ -18,7 +19,9 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<FarmerDashboard />} />
+            <Route path="/bhoomi" element={<Bhoomi />} />
+            <Route path="/dashboard" element={<Navigate to="/bhoomi" replace />} />
+            <Route path="/plots" element={<FarmerDashboard />} />
             <Route path="/field/:id" element={<FieldDetail />} />
             <Route path="/field/:id/analytics" element={<WaterUsageDashboard />} />
             <Route path="*" element={<LandingPage />} />

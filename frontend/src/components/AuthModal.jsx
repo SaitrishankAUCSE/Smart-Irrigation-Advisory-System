@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider, db } from '../firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -10,6 +11,7 @@ import { doc, setDoc, getDoc, addDoc, collection } from 'firebase/firestore';
 import { X, AlertCircle } from 'lucide-react';
 
 export default function AuthModal({ onClose }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState('signup'); // 'signup' | 'login'
@@ -106,6 +108,7 @@ export default function AuthModal({ onClose }) {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await recordUserInFirestore(cred.user, 'signup_email', 'password', true);
         onClose();
+        navigate('/bhoomi');
       } else {
         // Explicit login: Must verify account exists
         const cred = await signInWithEmailAndPassword(auth, email, password);
@@ -123,6 +126,7 @@ export default function AuthModal({ onClose }) {
 
         await recordUserInFirestore(cred.user, 'login_email', 'password', false);
         onClose();
+        navigate('/bhoomi');
       }
     } catch (err) {
       console.error('Submit error:', err);
@@ -150,10 +154,12 @@ export default function AuthModal({ onClose }) {
 
         await recordUserInFirestore(cred.user, 'login_google', 'google.com', false);
         onClose();
+        navigate('/bhoomi');
       } else {
         // In signup mode, register new account
         await recordUserInFirestore(cred.user, 'signup_google', 'google.com', true);
         onClose();
+        navigate('/bhoomi');
       }
     } catch (err) {
       console.error('Google sign-in error:', err);
