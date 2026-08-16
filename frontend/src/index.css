@@ -2,7 +2,7 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    AgriSense · Design Foundation
-   Adapted from drowningdot.com's dark-theme design language.
+   Adapted from AgriSense's dark-theme design language.
    Tokens, reset, typography, grain overlay, reveals, and layout primitives.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -465,20 +465,64 @@
 }
 
 .select-dark {
-  background: rgba(234, 232, 225, .06);
-  border: 1px solid var(--rule);
+  background: rgba(234, 232, 225, .04);
+  border: 1px solid rgba(234, 232, 225, .1);
   color: var(--sheet);
-  padding: 14px 16px;
-  font-size: 15px;
+  padding: 12px 16px;
+  font-size: 14px;
+  border-radius: 6px;
+  outline: none;
+  transition: all .22s ease;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A877E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.select-dark:focus, .select-dark:hover {
+  border-color: rgba(78, 201, 122, 0.5);
+  background-color: rgba(234, 232, 225, .08);
+}
+
+/* ── Custom Sleek Sliders ─────────────────────────────────────────────── */
+
+.custom-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
   outline: none;
-  transition: border-color .22s ease;
-  appearance: none;
+  margin: 10px 0;
   cursor: pointer;
 }
 
-.select-dark:focus {
-  border-color: var(--accent);
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(78, 201, 122, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px rgba(78, 201, 122, 0.6);
+}
+
+.custom-slider.blue-slider::-webkit-slider-thumb {
+  background: #54A0FF;
+  box-shadow: 0 0 10px rgba(84, 160, 255, 0.4);
+}
+
+.custom-slider.blue-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 15px rgba(84, 160, 255, 0.6);
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
@@ -583,12 +627,15 @@
 [data-bg]{background-image:var(--bg)}
 
 @keyframes letsGoFade {
-  0% {
-    opacity: 0;
-    transform: translateY(6px) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
 }

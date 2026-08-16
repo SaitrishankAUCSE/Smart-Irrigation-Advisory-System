@@ -199,28 +199,16 @@ export default function SoilSimulator() {
     }
   }, [currentUser]);
 
-  // Smooth easeInOutCubic scroll animation targeting cockpit
-  const handleSmoothScrollToCockpit = () => {
+  // Smooth scroll animation targeting cockpit with header offset
+  const handleSmoothScrollToCockpit = (e) => {
+    if (e) e.preventDefault();
     const target = document.getElementById('simulator-cockpit');
     if (!target) return;
-    const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - 75;
-    const startPosition = window.pageYOffset;
-    const distance = targetPosition - startPosition;
-    const duration = 1000;
-    let start = null;
-
-    const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    const step = (timestamp) => {
-      if (!start) start = timestamp;
-      const progress = timestamp - start;
-      const percent = Math.min(progress / duration, 1);
-      window.scrollTo(0, startPosition + distance * easeInOutCubic(percent));
-      if (progress < duration) {
-        window.requestAnimationFrame(step);
-      }
-    };
-    window.requestAnimationFrame(step);
+    const targetPosition = target.getBoundingClientRect().top + window.scrollY - 75;
+    window.scrollTo({
+      top: targetPosition,
+      behavior: 'smooth'
+    });
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -435,6 +423,7 @@ export default function SoilSimulator() {
 
           {/* Multilingual Glowing Action Button */}
           <button
+            type="button"
             onClick={handleSmoothScrollToCockpit}
             style={{
               display: 'inline-flex',
@@ -661,7 +650,7 @@ export default function SoilSimulator() {
               <input 
                 type="range" min="10" max="90" value={soilMoisture}
                 onChange={e => setSoilMoisture(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                className="custom-slider"
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--graphite)', fontFamily: "'DM Mono', monospace", marginTop: '2px' }}>
                 <span>10% (PWP)</span>
@@ -717,7 +706,7 @@ export default function SoilSimulator() {
               <input 
                 type="range" min="15" max="48" value={temperature}
                 onChange={e => setTemperature(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                className="custom-slider"
               />
             </div>
 
@@ -730,7 +719,7 @@ export default function SoilSimulator() {
               <input 
                 type="range" min="15" max="95" value={humidity}
                 onChange={e => setHumidity(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                className="custom-slider"
               />
             </div>
 
@@ -743,7 +732,7 @@ export default function SoilSimulator() {
               <input 
                 type="range" min="2.0" max="10.0" step="0.1" value={solarRadiation}
                 onChange={e => setSolarRadiation(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                className="custom-slider"
               />
             </div>
 
@@ -756,7 +745,7 @@ export default function SoilSimulator() {
               <input 
                 type="range" min="0.5" max="8.0" step="0.1" value={windSpeed}
                 onChange={e => setWindSpeed(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                className="custom-slider"
               />
             </div>
 
@@ -769,7 +758,7 @@ export default function SoilSimulator() {
               <input 
                 type="range" min="0" max="50" value={forecastRain}
                 onChange={e => setForecastRain(Number(e.target.value))}
-                style={{ width: '100%', accentColor: '#54A0FF', cursor: 'pointer' }}
+                className="custom-slider blue-slider"
               />
             </div>
 

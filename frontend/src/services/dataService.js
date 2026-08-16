@@ -137,9 +137,71 @@ export async function addIrrigationLog(fieldId, data) {
 export async function logUserAction(userId, action, details) {
   try {
     await addDoc(collection(db, 'user_actions'), {
-      user_id: userId, action, details, created_at: serverTimestamp()
+      user_id: userId || 'anonymous',
+      action,
+      details,
+      created_at: serverTimestamp()
     });
   } catch (err) {
     console.warn('Could not log user action', err);
+  }
+}
+
+export async function saveSimulationRun(userId, simData) {
+  try {
+    const docRef = await addDoc(collection(db, 'farmer_simulations'), {
+      user_id: userId || 'anonymous',
+      ...simData,
+      created_at: serverTimestamp()
+    });
+    const record = { id: docRef.id, ...simData, created_at: new Date().toISOString() };
+    const history = JSON.parse(localStorage.getItem('agrisense_sim_history') || '[]');
+    localStorage.setItem('agrisense_sim_history', JSON.stringify([record, ...history.slice(0, 49)]));
+    return record;
+  } catch (err) {
+    console.warn('Firestore simulation save error, saving locally:', err);
+    const record = { id: `local_${Date.now()}`, ...simData, created_at: new Date().toISOString() };
+    const history = JSON.parse(localStorage.getItem('agrisense_sim_history') || '[]');
+    localStorage.setItem('agrisense_sim_history', JSON.stringify([record, ...history.slice(0, 49)]));
+    return record;
+  }
+}
+
+export async function saveVoiceBroadcastLog(userId, voiceData) {
+  try {
+    await addDoc(collection(db, 'voice_broadcast_logs'), {
+      user_id: userId || 'anonymous',
+      ...voiceData,
+      created_at: serverTimestamp()
+    });
+  } catch (err) {
+    console.warn('Could not log voice broadcast to Firestore:', err);
+  }
+}
+
+export async function saveIrrigationSession(userId, sessionData) {
+  try {
+    const docRef = await addDoc(collection(db, 'irrigation_sessions'), {
+      user_id: userId || 'anonymous',
+      ...sessionData,
+      created_at: serverTimestamp()
+    });
+    return { id: docRef.id, ...sessionData };
+  } catch (err) {
+    console.warn('Could not save irrigation session to Firestore:', err);
+    return { id: `local_${Date.now()}`, ...sessionData };
+  }
+}
+
+export async function saveFarmerPreferences(userId, prefs) {
+  if (!userId) return;
+  try {
+    const { setDoc } = await import('firebase/firestore');
+    await setDoc(doc(db, 'farmer_preferences', userId), {
+      ...prefs,
+      updated_at: serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    console.warn('Could not save farmer preferences to Firestore:', err);
   }
 }

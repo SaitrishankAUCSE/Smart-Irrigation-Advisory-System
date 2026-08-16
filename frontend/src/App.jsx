@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import Navbar from './components/Navbar';
 import VerticalBackRail from './components/VerticalBackRail';
 import Bhoomi from './pages/Bhoomi';
-import SoilSimulator from './pages/SoilSimulator';
 import FarmerDashboard from './pages/FarmerDashboard';
 import LandingPage from './pages/LandingPage';
 import FieldDetail from './pages/FieldDetail';
@@ -73,12 +73,12 @@ function AppRoutes() {
 
       <Route 
         path="/simulator" 
-        element={currentUser ? <SoilSimulator /> : <Navigate to="/" replace />} 
+        element={currentUser ? <Navigate to="/bhoomi" replace /> : <Navigate to="/" replace />} 
       />
 
       <Route 
         path="/soil-simulator" 
-        element={<Navigate to="/simulator" replace />} 
+        element={<Navigate to="/bhoomi" replace />} 
       />
 
       <Route 
@@ -112,7 +112,8 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
       <Router>
         {/* Film grain overlay */}
         <div className="grain" aria-hidden="true" />
@@ -128,7 +129,8 @@ function App() {
           <AppRoutes />
         </main>
       </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

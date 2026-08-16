@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-
-export default function PoolCanvas({ brandText = 'drowningdot' }) {
+// AgriSense
+export default function PoolCanvas({ brandText = 'AgriSense' }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
 

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 
 /**
  * PleatCanvas — Animated fabric-fold hero canvas
- * Inspired by drowningdot.com's pleat landing.
+ * Inspired by AgriSense's pleat landing.
  * Renders warm earth-toned curtain folds on a canvas with cursor/scroll interactivity.
  * The brand name is drawn underneath and revealed as folds lift.
  */

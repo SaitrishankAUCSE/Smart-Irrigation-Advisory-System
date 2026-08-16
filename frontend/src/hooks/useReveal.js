@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
  * useReveal — scroll-triggered reveal hook
  * Attaches IntersectionObserver to the ref'd element.
  * Adds .shown class when element enters viewport (once).
- * Mirrors drowningdot.com's data-reveal / data-stagger pattern.
+ * Mirrors AgriSense's data-reveal / data-stagger pattern.
  */
 export function useReveal(options = {}, dependencies = []) {
   useEffect(() => {

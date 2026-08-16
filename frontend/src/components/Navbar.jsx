@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Leaf, LogOut, AlertTriangle, Sparkles } from 'lucide-react';
+import { Leaf, LogOut, AlertTriangle, Sparkles, Globe } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import AuthModal from './AuthModal';
+
+const LANGUAGES = [
+  { code: 'en', name: 'English', native: 'English' },
+  { code: 'te', name: 'Telugu', native: 'తెలుగు' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
+  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ' },
+  { code: 'mr', name: 'Marathi', native: 'मराठी' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা' },
+  { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી' },
+  { code: 'ml', name: 'Malayalam', native: 'മലയാളം' },
+  { code: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' }
+];
 
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
@@ -13,6 +27,19 @@ export default function Navbar() {
   const [showAuth, setShowAuth] = useState(false);
   const [showConfirmSignOut, setShowConfirmSignOut] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
+
+  let language = 'en';
+  let setLanguage = () => {};
+  try {
+    const langCtx = useLanguage();
+    if (langCtx) {
+      language = langCtx.language || 'en';
+      setLanguage = langCtx.setLanguage || (() => {});
+    }
+  } catch (e) {
+    // fallback
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,6 +102,76 @@ export default function Navbar() {
           <Leaf size={15} color="#2D7A4F" strokeWidth={2} />
           <span style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>AgriSense</span>
         </Link>
+
+        {/* LANGUAGE DROPDOWN */}
+        <div style={{ position: 'relative' }}>
+          <button 
+            onClick={() => setShowLangDropdown(!showLangDropdown)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '12px',
+              opacity: 0.8
+            }}
+          >
+            <Globe size={16} />
+            <span style={{ textTransform: 'uppercase' }}>{language}</span>
+          </button>
+          
+          {showLangDropdown && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              marginTop: '8px',
+              background: 'var(--proof)',
+              border: '1px solid rgba(234,232,225,0.12)',
+              borderRadius: '6px',
+              padding: '8px 0',
+              zIndex: 999,
+              display: 'flex',
+              flexDirection: 'column',
+              minWidth: '120px'
+            }}>
+              {LANGUAGES.map(lang => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    setLanguage(lang.code);
+                    setShowLangDropdown(false);
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: language === lang.code ? 'var(--accent-text)' : 'var(--sheet)',
+                    padding: '8px 16px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontFamily: "'Instrument Sans', sans-serif",
+                    fontSize: '13px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: 'background 0.2s',
+                    width: '100%'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(234,232,225,0.06)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <span>{lang.native}</span>
+                  <span style={{ fontSize: '10px', opacity: 0.5, fontFamily: "'DM Mono', monospace" }}>{lang.code.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           {currentUser ? (
